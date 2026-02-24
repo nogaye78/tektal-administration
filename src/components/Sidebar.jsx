@@ -67,7 +67,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-t border-gray-100 flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#FEBD00] text-white flex items-center justify-center font-bold">
-              {user.name?.charAt(0) || 'A'}
+              {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-slate-900 truncate">{user.name || 'Admin'}</p>
