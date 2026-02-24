@@ -1,8 +1,17 @@
+import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Route, Users, LogOut } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const [user, setUser] = useState({ name: '', email: '' });
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
@@ -17,7 +26,6 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay mobile */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-20 lg:hidden"
@@ -25,7 +33,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         />
       )}
 
-      {/* Sidebar */}
       <div className={`
         fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col z-30
         transition-transform duration-300
@@ -60,11 +67,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-t border-gray-100 flex flex-col gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#FEBD00] text-white flex items-center justify-center font-bold">
-              A
+              {user.name?.charAt(0) || 'A'}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-semibold text-slate-900 truncate">Admin</p>
-              <p className="text-xs text-gray-500 truncate">admin@tektal.com</p>
+              <p className="text-sm font-semibold text-slate-900 truncate">{user.name || 'Admin'}</p>
+              <p className="text-xs text-gray-500 truncate">{user.email || 'admin@tektal.com'}</p>
             </div>
           </div>
           <button
