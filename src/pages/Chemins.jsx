@@ -2,11 +2,6 @@ import { useState } from "react";
 import { Search, Map, Trash2, CheckCircle, PlusCircle, X } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 
-const TYPE_CHOICES = [
-  { value: "DESTINATION", label: "Destination" },
-  { value: "ACTIVITY", label: "Activité" },
-];
-
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-600",
   APPROVED: "bg-green-100 text-green-600",
@@ -29,7 +24,7 @@ const Chemins = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
-    type_parcours: "DESTINATION",
+    type_parcours: "", // on laisse vide pour l'input Destination
     video_file: null,
   });
 
@@ -42,13 +37,13 @@ const Chemins = () => {
 
     const dataToSend = new FormData();
     dataToSend.append("title", formData.title);
-    dataToSend.append("type_parcours", formData.type_parcours);
+    dataToSend.append("type_parcours", formData.type_parcours || "DESTINATION"); // fallback
     if (formData.video_file) {
       dataToSend.append("video_file", formData.video_file);
     }
 
-    await create(dataToSend); // Assure-toi que ta fonction `create` supporte FormData
-    setFormData({ title: "", type_parcours: "DESTINATION", video_file: null });
+    await create(dataToSend);
+    setFormData({ title: "", type_parcours: "", video_file: null });
     setShowModal(false);
   };
 
@@ -148,16 +143,15 @@ const Chemins = () => {
                 required
               />
 
-              {/* Type de parcours */}
-              <select
+              {/* Destination (input texte) */}
+              <input
+                type="text"
+                placeholder="Destination"
                 value={formData.type_parcours}
                 onChange={(e) => setFormData({ ...formData, type_parcours: e.target.value })}
                 className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-              >
-                {TYPE_CHOICES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
+                required
+              />
 
               {/* Fichier vidéo */}
               <input
