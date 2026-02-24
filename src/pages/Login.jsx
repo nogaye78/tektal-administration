@@ -23,8 +23,24 @@ const Login = () => {
 
     try {
       const data = await login(email, password);
+      
+      // ✅ 1. On garde tes tokens
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
+
+      // ✅ 2. LOGIQUE POUR LA SIDEBAR : 
+      // On crée l'objet utilisateur. 
+      // Si ton API ne renvoie pas de nom, on utilise la partie avant le '@' de l'email.
+      const userDisplayName = data.username || email.split('@')[0]; 
+      
+      const userData = {
+        name: userDisplayName,
+        email: email
+      };
+
+      // ✅ 3. On enregistre cet objet pour que la Sidebar puisse le lire
+      localStorage.setItem("user", JSON.stringify(userData));
+
       navigate("/chemins");
     } catch (err) {
       setError("Email ou mot de passe incorrect");
