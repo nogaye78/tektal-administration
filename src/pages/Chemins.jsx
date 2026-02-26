@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Map, Trash2, CheckCircle, Video } from "lucide-react";
+import { Search, Map, Trash2, CheckCircle, Video, Filter } from "lucide-react";
 import { usePathsList, usePathActions } from "../api/hooks";
 
 const STATUS_COLORS = {
@@ -11,8 +11,10 @@ const STATUS_COLORS = {
 const STATUS_LABELS = {
   PENDING: "En attente",
   APPROVED: "Valide",
-  REJECTED: "Refuse",
+  REJECTED: "Refusé",
 };
+
+const TYPE_CHOICES = ["DESTINATION", "ACTIVITY"];
 
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
@@ -20,19 +22,51 @@ const Chemins = () => {
   const { approve, reject } = usePathActions(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
 
-  const filteredChemins = chemins.filter((c) =>
-    (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrage par titre et type
+  const filteredChemins = chemins.filter((c) => {
+    const matchTitle = (c.title || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchType = typeFilter ? c.type_parcours === typeFilter : true;
+    return matchTitle && matchType;
+  });
+
+  // Fonction pour confirmer avant rejet
+  const handleReject = (id) => {
+    if (window.confirm("Êtes-vous sûr de vouloir refuser ce chemin ?")) {
+      reject(id);
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
           Gestion des Chemins
         </h1>
+
+        {/* Filtre type */}
+        <div className="flex items-center gap-2">
+          <Filter size={18} className="text-gray-400" />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#FEBD00]"
+          >
+            <option value="">Tous les types</option>
+            {TYPE_CHOICES.map((type) => (
+              <option key={type} value={type}>
+                {type === "DESTINATION" ? "Destination" : "Activité"}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
+      {/* Recherche */}
       <div className="relative">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -47,20 +81,21 @@ const Chemins = () => {
         />
       </div>
 
+      {/* Loader / Erreur / Aucun chemin */}
       {loading && (
         <p className="text-gray-500 text-center">Chargement...</p>
       )}
       {error && (
-        <p className="text-red-500 text-center text-sm">Erreur</p>
+        <p className="text-red-500 text-center text-sm">Erreur lors du chargement</p>
       )}
-
       {!loading && filteredChemins.length === 0 && (
         <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
           <Map className="mx-auto mb-2 opacity-10" size={48} />
-          <p>Aucun chemin trouve.</p>
+          <p>Aucun chemin trouvé.</p>
         </div>
       )}
 
+      {/* Liste des chemins */}
       <div className="space-y-3">
         {filteredChemins.map((chemin) => (
           <div
@@ -72,11 +107,12 @@ const Chemins = () => {
                 {chemin.title}
               </h3>
               <p className="text-xs text-gray-400">
-                Type : {chemin.type_parcours}
+                Type :{" "}
+                {chemin.type_parcours === "DESTINATION"
+                  ? "Destination"
+                  : "Activité"}
               </p>
-              <p className="text-xs text-gray-400">
-                Auteur : {chemin.author}
-              </p>
+              <p className="text-xs text-gray-400">Auteur : {chemin.author}</p>
 
               {chemin.video_url && (
                 <a
@@ -85,7 +121,7 @@ const Chemins = () => {
                   rel="noopener noreferrer"
                   className="text-xs text-blue-500 flex items-center gap-1"
                 >
-                  <Video size={12} /> Voir la video
+                  <Video size={12} /> Voir la vidéo
                 </a>
               )}
 
@@ -98,6 +134,7 @@ const Chemins = () => {
               </span>
             </div>
 
+            {/* Actions */}
             <div className="flex gap-3 self-end sm:self-auto">
               <button
                 onClick={() => approve(chemin.id)}
@@ -107,7 +144,7 @@ const Chemins = () => {
               </button>
 
               <button
-                onClick={() => reject(chemin.id)}
+                onClick={() => handleReject(chemin.id)}
                 className="text-red-500 hover:scale-110 transition"
               >
                 <Trash2 size={22} />
