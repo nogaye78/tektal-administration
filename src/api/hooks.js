@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { fetchPaths, approvePath, rejectPath, createPath, fetchConnectedUsers } from "./apiService";
+import { fetchPaths, approvePath, rejectPath, createPath, fetchConnectedUsers, deletePath } from "./apiService";
 
-// Hook pour récupérer les parcours
 export const usePathsList = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,7 +10,6 @@ export const usePathsList = () => {
     setLoading(true);
     try {
       const response = await fetchPaths();
-      // ✅ Gère la pagination Django et les tableaux simples
       const paths = response?.results || response || [];
       setData(Array.isArray(paths) ? paths : []);
     } catch (err) {
@@ -27,30 +25,26 @@ export const usePathsList = () => {
   return { data, loading, error, refetch: load };
 };
 
-// Hook pour actions sur les parcours
 export const usePathActions = (refetch) => {
   const approve = async (id) => {
-    try {
-      await approvePath(id);
-      refetch();
-    } catch (err) {
-      console.error("Erreur approbation:", err);
-    }
+    try { await approvePath(id); refetch(); }
+    catch (err) { console.error("Erreur approbation:", err); }
   };
 
   const reject = async (id) => {
-    try {
-      await rejectPath(id);
-      refetch();
-    } catch (err) {
-      console.error("Erreur refus:", err);
-    }
+    try { await rejectPath(id); refetch(); }
+    catch (err) { console.error("Erreur refus:", err); }
   };
 
-  return { approve, reject };
+  const remove = async (id) => {
+    if (!window.confirm("Supprimer ce parcours ?")) return;
+    try { await deletePath(id); refetch(); }
+    catch (err) { console.error("Erreur suppression:", err); }
+  };
+
+  return { approve, reject, remove };
 };
 
-// Hook création parcours
 export const useCreatePath = (refetch) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -62,8 +56,8 @@ export const useCreatePath = (refetch) => {
       await createPath(formData);
       refetch();
     } catch (err) {
-      console.error("Erreur création:", err);
-      setError(err.message || "Erreur lors de la création");
+      console.error("Erreur creation:", err);
+      setError(err.message || "Erreur lors de la creation");
     } finally {
       setLoading(false);
     }
@@ -72,7 +66,6 @@ export const useCreatePath = (refetch) => {
   return { create, loading, error };
 };
 
-// Hook utilisateurs connectés
 export const useConnectedUsers = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);

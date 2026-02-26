@@ -32,7 +32,7 @@ const uploadToCloudinary = async (file) => {
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
-  const { approve, reject } = usePathActions(refetch);
+  const { approve, reject, remove } = usePathActions(refetch);
   const { create, loading: creating } = useCreatePath(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,7 +40,7 @@ const Chemins = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [videoName, setVideoName] = useState("");
-  const [expandedVideo, setExpandedVideo] = useState(null); // ✅ ID du chemin avec vidéo ouverte
+  const [expandedVideo, setExpandedVideo] = useState(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -188,7 +188,6 @@ const Chemins = () => {
               </div>
 
               <div className="flex gap-3 self-end sm:self-auto items-center">
-                {/* ✅ Bouton voir/cacher vidéo */}
                 {chemin.video_url && (
                   <button
                     onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
@@ -199,16 +198,18 @@ const Chemins = () => {
                     {expandedVideo === chemin.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
                 )}
-                <button onClick={() => approve(chemin.id)} className="text-green-500 hover:scale-110 transition">
+                <button onClick={() => approve(chemin.id)} className="text-green-500 hover:scale-110 transition" title="Approuver">
                   <CheckCircle size={22} />
                 </button>
-                <button onClick={() => reject(chemin.id)} className="text-red-500 hover:scale-110 transition">
+                <button onClick={() => reject(chemin.id)} className="text-orange-400 hover:scale-110 transition" title="Refuser">
+                  <X size={22} />
+                </button>
+                <button onClick={() => remove(chemin.id)} className="text-red-500 hover:scale-110 transition" title="Supprimer">
                   <Trash2 size={22} />
                 </button>
               </div>
             </div>
 
-            {/* ✅ Vidéo intégrée directement dans la carte */}
             {expandedVideo === chemin.id && chemin.video_url && (
               <div className="px-4 pb-4">
                 <video
@@ -242,15 +243,13 @@ const Chemins = () => {
               />
 
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text" placeholder="Depart (ex: Dakar)"
+                <input type="text" placeholder="Depart (ex: Dakar)"
                   value={formData.start_label}
                   onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
                   className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                   required
                 />
-                <input
-                  type="text" placeholder="Arrivee (ex: Paris)"
+                <input type="text" placeholder="Arrivee (ex: Paris)"
                   value={formData.end_label}
                   onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
                   className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
