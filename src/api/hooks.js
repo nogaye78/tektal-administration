@@ -10,8 +10,10 @@ export const usePathsList = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const paths = await fetchPaths();
-      setData(paths);
+      const response = await fetchPaths();
+      // ✅ Gère la pagination Django et les tableaux simples
+      const paths = response?.results || response || [];
+      setData(Array.isArray(paths) ? paths : []);
     } catch (err) {
       setError(err);
     }
@@ -28,13 +30,21 @@ export const usePathsList = () => {
 // Hook pour actions sur les parcours
 export const usePathActions = (refetch) => {
   const approve = async (id) => {
-    await approvePath(id);
-    refetch();
+    try {
+      await approvePath(id);
+      refetch();
+    } catch (err) {
+      console.error("Erreur approbation:", err);
+    }
   };
 
   const reject = async (id) => {
-    await rejectPath(id);
-    refetch();
+    try {
+      await rejectPath(id);
+      refetch();
+    } catch (err) {
+      console.error("Erreur refus:", err);
+    }
   };
 
   return { approve, reject };
@@ -43,26 +53,40 @@ export const usePathActions = (refetch) => {
 // Hook création parcours
 export const useCreatePath = (refetch) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const create = async (formData) => {
     setLoading(true);
-    await createPath(formData);
-    setLoading(false);
-    refetch();
+    setError(null);
+    try {
+      await createPath(formData);
+      refetch();
+    } catch (err) {
+      console.error("Erreur création:", err);
+      setError(err.message || "Erreur lors de la création");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return { create, loading };
+  return { create, loading, error };
 };
 
 // Hook utilisateurs connectés
 export const useConnectedUsers = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    const users = await fetchConnectedUsers();
-    setData(users);
+    try {
+      const response = await fetchConnectedUsers();
+      const users = response?.results || response || [];
+      setData(Array.isArray(users) ? users : []);
+    } catch (err) {
+      setError(err);
+    }
     setLoading(false);
   };
 
@@ -70,5 +94,5 @@ export const useConnectedUsers = () => {
     load();
   }, []);
 
-  return { data, loading, refetch: load };
+  return { data, loading, error, refetch: load };
 };
