@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Map, Trash2, CheckCircle, PlusCircle, X, Video, Loader2, Plus } from "lucide-react";
+import { Search, Map, Trash2, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 
 const STATUS_COLORS = {
@@ -11,9 +11,9 @@ const STATUS_COLORS = {
 
 const STATUS_LABELS = {
   draft: "Brouillon",
-  published: "Publié",
-  hidden: "Caché",
-  deleted: "Supprimé",
+  published: "Publie",
+  hidden: "Cache",
+  deleted: "Supprime",
 };
 
 const uploadToCloudinary = async (file) => {
@@ -29,8 +29,6 @@ const uploadToCloudinary = async (file) => {
   return { secure_url: data.secure_url, duration: Math.round(data.duration || 60) };
 };
 
-const emptyStep = () => ({ step_number: 1, start_time: 0, end_time: 10, text: "" });
-
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
@@ -42,6 +40,7 @@ const Chemins = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [videoName, setVideoName] = useState("");
+  const [expandedVideo, setExpandedVideo] = useState(null); // ✅ ID du chemin avec vidéo ouverte
 
   const [formData, setFormData] = useState({
     title: "",
@@ -100,7 +99,10 @@ const Chemins = () => {
 
   const updateStep = (index, field, value) => {
     const newSteps = [...formData.steps];
-    newSteps[index] = { ...newSteps[index], [field]: field.includes("time") ? parseInt(value) || 0 : value };
+    newSteps[index] = {
+      ...newSteps[index],
+      [field]: field.includes("time") ? parseInt(value) || 0 : value,
+    };
     setFormData((prev) => ({ ...prev, steps: newSteps }));
   };
 
@@ -171,29 +173,53 @@ const Chemins = () => {
 
       <div className="space-y-3">
         {filteredChemins.map((chemin) => (
-          <div key={chemin.id} className="bg-white p-4 sm:p-5 rounded-xl border border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm">
-            <div className="space-y-1">
-              <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
-              <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
-              <p className="text-xs text-gray-400">Auteur : {chemin.user?.username || chemin.author}</p>
-              {chemin.video_url && (
-                <a href={chemin.video_url} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-blue-500 flex items-center gap-1">
-                  <Video size={12} /> Voir la video
-                </a>
-              )}
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
-                {STATUS_LABELS[chemin.status] || chemin.status}
-              </span>
+          <div key={chemin.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
+                <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
+                <p className="text-xs text-gray-400">Auteur : {chemin.user?.username || chemin.author}</p>
+                {chemin.duration && (
+                  <p className="text-xs text-gray-400">Duree : {chemin.duration}s</p>
+                )}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
+                  {STATUS_LABELS[chemin.status] || chemin.status}
+                </span>
+              </div>
+
+              <div className="flex gap-3 self-end sm:self-auto items-center">
+                {/* ✅ Bouton voir/cacher vidéo */}
+                {chemin.video_url && (
+                  <button
+                    onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
+                    className="flex items-center gap-1 text-xs text-blue-500 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition"
+                  >
+                    <Video size={14} />
+                    {expandedVideo === chemin.id ? "Cacher" : "Voir video"}
+                    {expandedVideo === chemin.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                )}
+                <button onClick={() => approve(chemin.id)} className="text-green-500 hover:scale-110 transition">
+                  <CheckCircle size={22} />
+                </button>
+                <button onClick={() => reject(chemin.id)} className="text-red-500 hover:scale-110 transition">
+                  <Trash2 size={22} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3 self-end sm:self-auto">
-              <button onClick={() => approve(chemin.id)} className="text-green-500 hover:scale-110 transition">
-                <CheckCircle size={22} />
-              </button>
-              <button onClick={() => reject(chemin.id)} className="text-red-500 hover:scale-110 transition">
-                <Trash2 size={22} />
-              </button>
-            </div>
+
+            {/* ✅ Vidéo intégrée directement dans la carte */}
+            {expandedVideo === chemin.id && chemin.video_url && (
+              <div className="px-4 pb-4">
+                <video
+                  src={chemin.video_url}
+                  controls
+                  className="w-full rounded-xl max-h-64 bg-black"
+                >
+                  Votre navigateur ne supporte pas la lecture video.
+                </video>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -207,7 +233,6 @@ const Chemins = () => {
             <h2 className="text-xl font-bold">Nouveau Parcours</h2>
 
             <form onSubmit={handleCreate} className="space-y-4">
-              {/* Titre */}
               <input
                 type="text" placeholder="Titre du parcours"
                 value={formData.title}
@@ -216,7 +241,6 @@ const Chemins = () => {
                 required
               />
 
-              {/* Depart / Arrivee */}
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text" placeholder="Depart (ex: Dakar)"
@@ -234,35 +258,29 @@ const Chemins = () => {
                 />
               </div>
 
-              {/* Coordonnees optionnelles */}
               <div className="grid grid-cols-2 gap-3">
                 <input type="number" placeholder="Lat depart (optionnel)"
                   value={formData.start_lat}
                   onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none"
-                  step="any"
+                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
                 />
                 <input type="number" placeholder="Lng depart (optionnel)"
                   value={formData.start_lng}
                   onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none"
-                  step="any"
+                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
                 />
                 <input type="number" placeholder="Lat arrivee (optionnel)"
                   value={formData.end_lat}
                   onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none"
-                  step="any"
+                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
                 />
                 <input type="number" placeholder="Lng arrivee (optionnel)"
                   value={formData.end_lng}
                   onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none"
-                  step="any"
+                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
                 />
               </div>
 
-              {/* Upload video */}
               <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
                 {uploading ? <Loader2 size={24} className="animate-spin text-[#FEBD00]" /> : <Video size={24} className="text-gray-400 mb-2" />}
                 <span className="text-sm text-gray-500 mt-1">
@@ -274,7 +292,6 @@ const Chemins = () => {
                 <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
               </label>
 
-              {/* Etapes */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="font-semibold text-sm">Etapes ({formData.steps.length}/6)</h3>
