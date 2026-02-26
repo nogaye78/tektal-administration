@@ -1,11 +1,6 @@
 import { useState } from "react";
-import { Search, Map, Trash2, CheckCircle, PlusCircle, Video, Loader2 } from "lucide-react";
-import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
-
-const TYPE_CHOICES = [
-  { value: "DESTINATION", label: "Destination" },
-  { value: "ACTIVITY", label: "Activite" },
-];
+import { Search, Map, Trash2, CheckCircle, Video } from "lucide-react";
+import { usePathsList, usePathActions } from "../api/hooks";
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-600",
@@ -19,178 +14,25 @@ const STATUS_LABELS = {
   REJECTED: "Refuse",
 };
 
-const uploadToCloudinary = async (file) => {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", "tektal_videos");
-
-  const res = await fetch(
-    "https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload",
-    {
-      method: "POST",
-      body: fd,
-    }
-  );
-
-  const data = await res.json();
-  if (!data.secure_url) throw new Error(data.error?.message || "Upload echoue");
-  return data.secure_url;
-};
-
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
   const { approve, reject } = usePathActions(refetch);
-  const { create, loading: creating } = useCreatePath(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [videoName, setVideoName] = useState("");
-
-  const [formData, setFormData] = useState({
-    title: "",
-    type_parcours: "DESTINATION",
-    video_url: "",
-  });
 
   const filteredChemins = chemins.filter((c) =>
     (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleVideoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setVideoName(file.name);
-    setUploadError("");
-    setUploading(true);
-
-    try {
-      const url = await uploadToCloudinary(file);
-      setFormData((prev) => ({ ...prev, video_url: url }));
-    } catch (err) {
-      setUploadError(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-
-    if (!formData.video_url) {
-      setUploadError("Veuillez uploader une video.");
-      return;
-    }
-
-    await create({
-      title: formData.title,
-      type_parcours: formData.type_parcours,
-      video_url: formData.video_url,
-    });
-
-    setFormData({
-      title: "",
-      type_parcours: "DESTINATION",
-      video_url: "",
-    });
-
-    setVideoName("");
-    setUploadError("");
-  };
-
   return (
-    <div className="space-y-8">
-
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-        Gestion des Chemins
-      </h1>
-
-      {/* FORMULAIRE DIRECTEMENT DANS LA PAGE */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-        <h2 className="text-xl font-bold">Nouveau Parcours</h2>
-
-        <form onSubmit={handleCreate} className="space-y-4">
-
-          <input
-            type="text"
-            placeholder="Titre du parcours"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-            className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-            required
-          />
-
-          <select
-            value={formData.type_parcours}
-            onChange={(e) =>
-              setFormData({ ...formData, type_parcours: e.target.value })
-            }
-            className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-          >
-            {TYPE_CHOICES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-
-          <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
-            {uploading ? (
-              <Loader2 size={24} className="animate-spin text-[#FEBD00]" />
-            ) : (
-              <Video size={24} className="text-gray-400 mb-2" />
-            )}
-
-            <span className="text-sm text-gray-500 mt-1">
-              {uploading
-                ? "Upload en cours..."
-                : videoName
-                ? videoName
-                : "Choisir une video"}
-            </span>
-
-            {formData.video_url && (
-              <span className="text-xs text-green-500 mt-1">
-                Video uploadee
-              </span>
-            )}
-
-            {uploadError && (
-              <span className="text-xs text-red-500 mt-1">
-                {uploadError}
-              </span>
-            )}
-
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={handleVideoChange}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={creating || uploading}
-            className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2"
-          >
-            {creating ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Creation...
-              </>
-            ) : (
-              "Creer le parcours"
-            )}
-          </button>
-        </form>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+          Gestion des Chemins
+        </h1>
       </div>
 
-      {/* RECHERCHE */}
       <div className="relative">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -205,17 +47,28 @@ const Chemins = () => {
         />
       </div>
 
-      {loading && <p className="text-gray-500 text-center">Chargement...</p>}
-      {error && <p className="text-red-500 text-center text-sm">Erreur</p>}
+      {loading && (
+        <p className="text-gray-500 text-center">Chargement...</p>
+      )}
+      {error && (
+        <p className="text-red-500 text-center text-sm">Erreur</p>
+      )}
+
+      {!loading && filteredChemins.length === 0 && (
+        <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
+          <Map className="mx-auto mb-2 opacity-10" size={48} />
+          <p>Aucun chemin trouve.</p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {filteredChemins.map((chemin) => (
           <div
             key={chemin.id}
-            className="bg-white p-4 rounded-xl border shadow-sm flex justify-between items-center"
+            className="bg-white p-4 sm:p-5 rounded-xl border border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm"
           >
-            <div>
-              <h3 className="font-bold text-slate-800">
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-800 text-sm sm:text-base">
                 {chemin.title}
               </h3>
               <p className="text-xs text-gray-400">
@@ -224,19 +77,38 @@ const Chemins = () => {
               <p className="text-xs text-gray-400">
                 Auteur : {chemin.author}
               </p>
+
+              {chemin.video_url && (
+                <a
+                  href={chemin.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-500 flex items-center gap-1"
+                >
+                  <Video size={12} /> Voir la video
+                </a>
+              )}
+
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  STATUS_COLORS[chemin.status]
+                }`}
+              >
+                {STATUS_LABELS[chemin.status]}
+              </span>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 self-end sm:self-auto">
               <button
                 onClick={() => approve(chemin.id)}
-                className="text-green-500"
+                className="text-green-500 hover:scale-110 transition"
               >
                 <CheckCircle size={22} />
               </button>
 
               <button
                 onClick={() => reject(chemin.id)}
-                className="text-red-500"
+                className="text-red-500 hover:scale-110 transition"
               >
                 <Trash2 size={22} />
               </button>
