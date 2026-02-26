@@ -149,7 +149,7 @@ const Chemins = () => {
         ))}
       </div>
 
-      {showModal && (
+      {/* {showModal && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4">
           <div className="bg-white p-6 rounded-2xl w-full max-w-lg space-y-4 relative">
             <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-gray-400 hover:text-black">
@@ -203,7 +203,7 @@ const Chemins = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
