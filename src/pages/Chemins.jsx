@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, Map, Trash2, CheckCircle, Video } from "lucide-react";
 import { usePathsList, usePathActions } from "../api/hooks";
+import toast, { Toaster } from "react-hot-toast"; // ✅ Import toast
 
 const STATUS_COLORS = {
   PENDING: "bg-yellow-100 text-yellow-600",
@@ -17,7 +18,7 @@ const STATUS_LABELS = {
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
-  const { approve, reject } = usePathActions(refetch);
+  const { approve, reject, deletePath } = usePathActions(refetch); // ✅ On récupère deletePath
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -25,8 +26,24 @@ const Chemins = () => {
     (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleDelete = async (id) => {
+    const confirm = window.confirm("Êtes-vous sûr de vouloir supprimer ce chemin ?");
+    if (!confirm) return;
+
+    try {
+      await deletePath(id); // Appel à l'API pour supprimer
+      toast.success("Chemin supprimé avec succès !");
+      refetch(); // Actualiser la liste
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur lors de la suppression !");
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <Toaster position="top-right" /> {/* ✅ Composant pour afficher les toasts */}
+      
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
           Gestion des Chemins
@@ -47,17 +64,13 @@ const Chemins = () => {
         />
       </div>
 
-      {loading && (
-        <p className="text-gray-500 text-center">Chargement...</p>
-      )}
-      {error && (
-        <p className="text-red-500 text-center text-sm">Erreur</p>
-      )}
+      {loading && <p className="text-gray-500 text-center">Chargement...</p>}
+      {error && <p className="text-red-500 text-center text-sm">Erreur</p>}
 
       {!loading && filteredChemins.length === 0 && (
         <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
           <Map className="mx-auto mb-2 opacity-10" size={48} />
-          <p>Aucun chemin trouve.</p>
+          <p>Aucun chemin trouvé.</p>
         </div>
       )}
 
@@ -79,16 +92,16 @@ const Chemins = () => {
               </p>
 
               {chemin.video_url && (
-  <div className="mt-2">
-    <video
-      src={chemin.video_url}
-      controls
-      className="w-full max-w-xs rounded-lg"
-    >
-      Votre navigateur ne supporte pas la lecture de la vidéo.
-    </video>
-  </div>
-)}
+                <div className="mt-2">
+                  <video
+                    src={chemin.video_url}
+                    controls
+                    className="w-full max-w-xs rounded-lg"
+                  >
+                    Votre navigateur ne supporte pas la lecture de la vidéo.
+                  </video>
+                </div>
+              )}
 
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -108,7 +121,7 @@ const Chemins = () => {
               </button>
 
               <button
-                onClick={() => reject(chemin.id)}
+                onClick={() => handleDelete(chemin.id)}
                 className="text-red-500 hover:scale-110 transition"
               >
                 <Trash2 size={22} />
