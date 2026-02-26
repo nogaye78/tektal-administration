@@ -58,9 +58,10 @@ export const login = async (email, password) => {
   }
 };
 
+// ✅ Utilise admin-panel qui retourne TOUS les parcours
 export const fetchPaths = async () => {
   const token = localStorage.getItem("access_token");
-  const response = await pathsApi.get("paths/", {
+  const response = await api.get("paths/", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
