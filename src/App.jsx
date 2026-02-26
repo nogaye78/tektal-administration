@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -10,13 +10,10 @@ import Sidebar from "./components/Sidebar";
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <div className="flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
       <div className="flex-1 lg:ml-64 min-h-screen bg-gray-50">
-        {/* Header mobile avec hamburger */}
         <div className="lg:hidden flex items-center gap-4 p-4 bg-white border-b border-gray-200 sticky top-0 z-10">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -26,7 +23,6 @@ function Layout({ children }) {
           </button>
           <h1 className="text-lg font-bold text-slate-900">Tektal Admin</h1>
         </div>
-
         <main className="p-4 sm:p-8">
           {children}
         </main>
@@ -40,7 +36,11 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={
+        
+        {/* ✅ Redirige / vers /dashboard */}
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        
+        <Route path="/dashboard" element={
           <PrivateRoute>
             <Layout><Dashboard /></Layout>
           </PrivateRoute>
