@@ -4,7 +4,7 @@ import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 
 const TYPE_CHOICES = [
   { value: "DESTINATION", label: "Destination" },
-  { value: "ACTIVITY", label: "Activité" },
+  { value: "ACTIVITY", label: "Activite" },
 ];
 
 const STATUS_COLORS = {
@@ -15,26 +15,22 @@ const STATUS_COLORS = {
 
 const STATUS_LABELS = {
   PENDING: "En attente",
-  APPROVED: "Validé",
-  REJECTED: "Refusé",
+  APPROVED: "Valide",
+  REJECTED: "Refuse",
 };
 
-//  Upload vers Cloudinary
 const uploadToCloudinary = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "tektal_videos"); 
-  formData.append("cloud_name", "dqcc8n1th");        
-
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload`, 
-    {
-      method: "POST",
-      body: formData,
-    }
-  );
-  const data = await response.json();
-  return data.secure_url; // ✅ URL Cloudinary
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", "tektal_videos");
+  const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", {
+    method: "POST",
+    body: fd,
+  });
+  const data = await res.json();
+  console.log("Cloudinary:", data);
+  if (!data.secure_url) throw new Error(data.error?.message || "Upload echoue");
+  return data.secure_url;
 };
 
 const Chemins = () => {
@@ -46,6 +42,7 @@ const Chemins = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [videoName, setVideoName] = useState("");
   const [formData, setFormData] = useState({
     title: "",
@@ -53,22 +50,21 @@ const Chemins = () => {
     video_url: "",
   });
 
-  const filteredChemins = chemins.filter((chemin) =>
-    (chemin.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredChemins = chemins.filter((c) =>
+    (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleVideoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setVideoName(file.name);
+    setUploadError("");
     setUploading(true);
-
     try {
       const url = await uploadToCloudinary(file);
-      setFormData({ ...formData, video_url: url });
+      setFormData((prev) => ({ ...prev, video_url: url }));
     } catch (err) {
-      alert("Erreur lors de l'upload vidéo");
+      setUploadError(err.message);
     } finally {
       setUploading(false);
     }
@@ -76,6 +72,10 @@ const Chemins = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!formData.video_url) {
+      setUploadError("Veuillez uploader une video.");
+      return;
+    }
     await create({
       title: formData.title,
       type_parcours: formData.type_parcours,
@@ -83,6 +83,7 @@ const Chemins = () => {
     });
     setFormData({ title: "", type_parcours: "DESTINATION", video_url: "" });
     setVideoName("");
+    setUploadError("");
     setShowModal(false);
   };
 
@@ -95,7 +96,7 @@ const Chemins = () => {
           className="flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2 rounded-xl transition w-full sm:w-auto"
         >
           <PlusCircle size={18} />
-          Créer un parcours
+          Creer un parcours
         </button>
       </div>
 
@@ -111,12 +112,12 @@ const Chemins = () => {
       </div>
 
       {loading && <p className="text-gray-500 text-center">Chargement...</p>}
-      {error && <p className="text-red-500 text-center text-sm">Erreur : {JSON.stringify(error)}</p>}
+      {error && <p className="text-red-500 text-center text-sm">Erreur</p>}
 
       {!loading && filteredChemins.length === 0 && (
         <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
           <Map className="mx-auto mb-2 opacity-10" size={48} />
-          <p>Aucun chemin trouvé.</p>
+          <p>Aucun chemin trouve.</p>
         </div>
       )}
 
@@ -128,9 +129,8 @@ const Chemins = () => {
               <p className="text-xs text-gray-400">Type : {chemin.type_parcours}</p>
               <p className="text-xs text-gray-400">Auteur : {chemin.author}</p>
               {chemin.video_url && (
-                <a href={chemin.video_url} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-blue-500 flex items-center gap-1">
-                  <Video size={12} /> Voir la vidéo
+                <a href={chemin.video_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 flex items-center gap-1">
+                  <Video size={12} /> Voir la video
                 </a>
               )}
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status]}`}>
@@ -175,7 +175,6 @@ const Chemins = () => {
                 ))}
               </select>
 
-              {/* ✅ Upload vidéo vers Cloudinary */}
               <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
                 {uploading ? (
                   <Loader2 size={24} className="animate-spin text-[#FEBD00]" />
@@ -183,17 +182,15 @@ const Chemins = () => {
                   <Video size={24} className="text-gray-400 mb-2" />
                 )}
                 <span className="text-sm text-gray-500 mt-1">
-                  {uploading ? "Upload en cours..." : videoName ? videoName : "Choisir une vidéo"}
+                  {uploading ? "Upload en cours..." : videoName ? videoName : "Choisir une video"}
                 </span>
                 {formData.video_url && (
-                  <span className="text-xs text-green-500 mt-1">✅ Vidéo uploadée</span>
+                  <span className="text-xs text-green-500 mt-1">Video uploadee</span>
                 )}
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={handleVideoChange}
-                />
+                {uploadError && (
+                  <span className="text-xs text-red-500 mt-1">{uploadError}</span>
+                )}
+                <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
               </label>
 
               <button
@@ -201,7 +198,7 @@ const Chemins = () => {
                 disabled={creating || uploading}
                 className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2"
               >
-                {creating ? <><Loader2 size={18} className="animate-spin" /> Création...</> : "Créer le parcours"}
+                {creating ? <><Loader2 size={18} className="animate-spin" /> Creation...</> : "Creer le parcours"}
               </button>
             </form>
           </div>
