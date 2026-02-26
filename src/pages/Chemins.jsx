@@ -79,15 +79,16 @@ const Chemins = () => {
               </p>
 
               {chemin.video_url && (
-                <video
-                  href={chemin.video_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-500 flex items-center gap-1"
-                >
-                  <Video size={12} /> Voir la video
-                </video>
-              )}
+  <div className="mt-2">
+    <video
+      src={chemin.video_url}
+      controls
+      className="w-full max-w-xs rounded-lg"
+    >
+      Votre navigateur ne supporte pas la lecture de la vidéo.
+    </video>
+  </div>
+)}
 
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${
