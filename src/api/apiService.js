@@ -14,10 +14,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem("refresh_token");
       if (refresh) {
         try {
-          const res = await axios.post(
-            `${BASE_URL}/api/token/refresh/`,
-            { refresh }
-          );
+          const res = await axios.post(`${BASE_URL}/api/token/refresh/`, { refresh });
           localStorage.setItem("access_token", res.data.access);
           error.config.headers["Authorization"] = `Bearer ${res.data.access}`;
           return api.request(error.config);
@@ -31,15 +28,41 @@ api.interceptors.response.use(
   }
 );
 
-// Login admin
+// ✅ Login via Djoser + vérification rôle
 export const login = async (email, password) => {
   try {
-    const response = await api.post("admin/login/", { email, password });
-    localStorage.setItem("access_token", response.data.access);
-    localStorage.setItem("refresh_token", response.data.refresh);
-    return response.data;
+    // Étape 1 : récupère les tokens via Djoser
+    const tokenRes = await axios.post(`${BASE_URL}/api/auth/jwt/create/`, {
+      email,
+      password,
+    });
+
+    const { access, refresh } = tokenRes.data;
+
+    // Étape 2 : récupère le profil utilisateur
+    const profileRes = await axios.get(`${BASE_URL}/api/auth/users/me/`, {
+      headers: { Authorization: `Bearer ${access}` },
+    });
+
+    const user = profileRes.data;
+
+    // Étape 3 : vérifie si admin
+    if (user.role !== "admin") {
+      throw new Error("Accès réservé aux administrateurs.");
+    }
+
+    // Étape 4 : sauvegarde
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    return { access, refresh, user };
   } catch (err) {
-    throw new Error(err.response?.data?.error || "Erreur login");
+    throw new Error(
+      err.response?.data?.detail ||
+      err.message ||
+      "Email ou mot de passe incorrect"
+    );
   }
 };
 

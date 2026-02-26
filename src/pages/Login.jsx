@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../api/apiService";
-// ✅ On garde les icônes
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"; 
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 const Login = () => {
-  // Petit ajout pour vérifier l'URL de l'API dans la console
-  console.log("API URL:", import.meta.env.VITE_API_URL);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,28 +17,17 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const data = await login(email, password);
-      
-      // ✅ 1. On garde tes tokens
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
+      const { user } = await login(email, password);
 
-      // ✅ 2. LOGIQUE POUR LA SIDEBAR : 
-      // On crée l'objet utilisateur. 
-      // Si ton API ne renvoie pas de nom, on utilise la partie avant le '@' de l'email.
-      const userDisplayName = data.username || email.split('@')[0]; 
-      
-      const userData = {
-        name: userDisplayName,
-        email: email
-      };
-
-      // ✅ 3. On enregistre cet objet pour que la Sidebar puisse le lire
-      localStorage.setItem("user", JSON.stringify(userData));
-
-      navigate("/chemins");
+      // ✅ Vérifie le rôle depuis la base de données
+      if (user.role === "admin") {
+        navigate("/dashboard");
+      } else {
+        setError("Accès réservé aux administrateurs.");
+        localStorage.clear();
+      }
     } catch (err) {
-      setError("Email ou mot de passe incorrect");
+      setError(err.message || "Email ou mot de passe incorrect");
     } finally {
       setLoading(false);
     }
@@ -61,10 +45,11 @@ const Login = () => {
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>
+          <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">
+            {error}
+          </p>
         )}
 
-        {/* Email */}
         <div className="relative">
           <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400">
             <Mail size={18} />
@@ -79,7 +64,6 @@ const Login = () => {
           />
         </div>
 
-        {/* Password */}
         <div className="relative">
           <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400">
             <Lock size={18} />
@@ -92,10 +76,9 @@ const Login = () => {
             className="w-full border rounded-xl pl-10 pr-12 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none border-gray-200"
             required
           />
-
           <button
             type="button"
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
