@@ -79,14 +79,14 @@ const Chemins = () => {
               </p>
 
               {chemin.video_url && (
-                <a
+                <video
                   href={chemin.video_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-blue-500 flex items-center gap-1"
                 >
                   <Video size={12} /> Voir la video
-                </a>
+                </video>
               )}
 
               <span
