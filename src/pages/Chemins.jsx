@@ -6,14 +6,12 @@ const STATUS_COLORS = {
   draft: "bg-yellow-100 text-yellow-600",
   published: "bg-green-100 text-green-600",
   hidden: "bg-gray-100 text-gray-600",
-  deleted: "bg-red-100 text-red-600",
 };
 
 const STATUS_LABELS = {
   draft: "Brouillon",
   published: "Publie",
   hidden: "Cache",
-  deleted: "Supprime",
 };
 
 const uploadToCloudinary = async (file) => {
