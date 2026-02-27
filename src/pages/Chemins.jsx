@@ -9,6 +9,7 @@ const STATUS_COLORS = {
   deleted: "bg-red-100 text-red-600",
   APPROVED: "bg-green-100 text-green-600",
   REJECTED: "bg-red-100 text-red-600",
+  PENDING: "bg-yellow-100 text-yellow-600",
 };
 
 const STATUS_LABELS = {
@@ -18,6 +19,7 @@ const STATUS_LABELS = {
   deleted: "Supprime",
   APPROVED: "Approuvé",
   REJECTED: "Refusé",
+  PENDING: "En attente",
 };
 
 const uploadToCloudinary = async (file) => {
