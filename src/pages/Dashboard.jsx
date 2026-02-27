@@ -1,4 +1,4 @@
-// Dashboard.jsx
+import { useEffect } from "react";
 import StatCard from "../components/StatCard";
 import { usePathsList, useConnectedUsers } from "../api/hooks";
 import { Map, Users, CheckCircle } from "lucide-react";
@@ -6,6 +6,12 @@ import { Map, Users, CheckCircle } from "lucide-react";
 const Dashboard = () => {
   const { data: chemins, loading: loadingPaths, refetch: refetchPaths } = usePathsList();
   const { data: users, loading: loadingUsers, refetch: refetchUsers } = useConnectedUsers();
+
+  // Recharge les données à chaque fois qu'on arrive sur le Dashboard
+  useEffect(() => {
+    refetchPaths();
+    refetchUsers();
+  }, []);
 
   const totalChemins = chemins?.length || 0;
   const totalUsers = users?.length || 0;
@@ -29,7 +35,6 @@ const Dashboard = () => {
           bgColor="bg-blue-100"
           textColor="text-blue-600"
         />
-
         <StatCard
           label="Utilisateurs connectés"
           value={isLoading ? "..." : totalUsers}
@@ -37,7 +42,6 @@ const Dashboard = () => {
           bgColor="bg-purple-100"
           textColor="text-purple-600"
         />
-
         <StatCard
           label="Chemins Approuvés"
           value={isLoading ? "..." : totalOfficiels}
