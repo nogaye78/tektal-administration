@@ -226,130 +226,96 @@ const Chemins = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 overflow-y-auto py-8">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-2xl space-y-4 relative">
-            <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-gray-400 hover:text-black">
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-bold">Nouveau Parcours</h2>
+  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+    
+    {/* CARD MODAL */}
+    <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl relative p-5">
+      
+      {/* CROIX EN HAUT */}
+      <button
+        onClick={() => setShowModal(false)}
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition"
+      >
+        <X size={16} />
+      </button>
 
-            <form onSubmit={handleCreate} className="space-y-4">
-              <input
-                type="text" placeholder="Titre du parcours"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-                required
-              />
+      <h2 className="text-lg font-bold mb-4">Nouveau Parcours</h2>
 
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="Depart (ex: Dakar)"
-                  value={formData.start_label}
-                  onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-                  required
-                />
-                <input type="text" placeholder="Arrivee (ex: Paris)"
-                  value={formData.end_label}
-                  onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-                  required
-                />
-              </div>
+      <form onSubmit={handleCreate} className="space-y-3">
 
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Lat depart (optionnel)"
-                  value={formData.start_lat}
-                  onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-                <input type="number" placeholder="Lng depart (optionnel)"
-                  value={formData.start_lng}
-                  onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-                <input type="number" placeholder="Lat arrivee (optionnel)"
-                  value={formData.end_lat}
-                  onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-                <input type="number" placeholder="Lng arrivee (optionnel)"
-                  value={formData.end_lng}
-                  onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-              </div>
+        {/* INPUT TITRE */}
+        <input
+          type="text"
+          placeholder="Titre du parcours"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+          required
+        />
 
-              <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
-                {uploading ? <Loader2 size={24} className="animate-spin text-[#FEBD00]" /> : <Video size={24} className="text-gray-400 mb-2" />}
-                <span className="text-sm text-gray-500 mt-1">
-                  {uploading ? "Upload en cours..." : videoName ? videoName : "Choisir une video"}
-                </span>
-                {formData.video_url && <span className="text-xs text-green-500 mt-1">Video uploadee ✅</span>}
-                {formData.duration > 0 && <span className="text-xs text-gray-400">Duree: {formData.duration}s</span>}
-                {uploadError && <span className="text-xs text-red-500 mt-1">{uploadError}</span>}
-                <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
-              </label>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-sm">Etapes ({formData.steps.length}/6)</h3>
-                  {formData.steps.length < 6 && (
-                    <button type="button" onClick={addStep}
-                      className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold">
-                      <Plus size={14} /> Ajouter etape
-                    </button>
-                  )}
-                </div>
-
-                {formData.steps.map((step, index) => (
-                  <div key={index} className="border rounded-xl p-3 space-y-2 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-gray-600">Etape {step.step_number}</span>
-                      {formData.steps.length > 2 && (
-                        <button type="button" onClick={() => removeStep(index)} className="text-red-400 text-xs">
-                          Supprimer
-                        </button>
-                      )}
-                    </div>
-                    <input
-                      type="text" placeholder="Description de l'etape"
-                      value={step.text}
-                      onChange={(e) => updateStep(index, "text", e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#FEBD00]"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="number" placeholder="Debut (secondes)"
-                        value={step.start_time}
-                        onChange={(e) => updateStep(index, "start_time", e.target.value)}
-                        className="border rounded-lg px-3 py-2 text-sm outline-none"
-                        min="0" required
-                      />
-                      <input
-                        type="number" placeholder="Fin (secondes)"
-                        value={step.end_time}
-                        onChange={(e) => updateStep(index, "end_time", e.target.value)}
-                        className="border rounded-lg px-3 py-2 text-sm outline-none"
-                        min="1" required
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="submit"
-                disabled={creating || uploading}
-                className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2"
-              >
-                {creating ? <><Loader2 size={18} className="animate-spin" /> Creation...</> : "Creer le parcours"}
-              </button>
-            </form>
-          </div>
+        {/* START / END */}
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            placeholder="Depart"
+            value={formData.start_label}
+            onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Arrivee"
+            value={formData.end_label}
+            onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+            required
+          />
         </div>
-      )}
+
+        {/* VIDEO */}
+        <label className="w-full border-2 border-dashed border-gray-300 rounded-lg px-3 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
+          {uploading ? (
+            <Loader2 size={20} className="animate-spin text-[#FEBD00]" />
+          ) : (
+            <Video size={20} className="text-gray-400 mb-1" />
+          )}
+
+          <span className="text-xs text-gray-500">
+            {uploading
+              ? "Upload..."
+              : videoName
+              ? videoName
+              : "Choisir une video"}
+          </span>
+
+          <input
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={handleVideoChange}
+          />
+        </label>
+
+        {/* BOUTON PLUS PETIT */}
+        <button
+          type="submit"
+          disabled={creating || uploading}
+          className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-2 rounded-lg text-sm transition flex justify-center items-center gap-2"
+        >
+          {creating ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Creation...
+            </>
+          ) : (
+            "Creer"
+          )}
+        </button>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 };

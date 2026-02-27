@@ -19,7 +19,7 @@ const Login = () => {
     try {
       const { user } = await login(email, password);
 
-      // ✅ Vérifie le rôle depuis la base de données
+      //  Vérifie le rôle depuis la base de données
       if (user.role === "admin") {
         navigate("/dashboard");
       } else {

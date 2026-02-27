@@ -14,7 +14,7 @@ const Dashboard = () => {
   const isLoading = loadingPaths || loadingUsers;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
           Dashboard
@@ -24,10 +24,8 @@ const Dashboard = () => {
         </p>
       </div>
 
-      {/* GRID PRINCIPAL */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Ligne 1 */}
+      {/* GRID 3 CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           label="Chemins"
           value={isLoading ? "..." : totalChemins}
@@ -44,19 +42,13 @@ const Dashboard = () => {
           textColor="text-purple-600"
         />
 
-        {/* Ligne 2 centrée */}
-        <div className="md:col-span-2 flex justify-center">
-          <div className="w-full md:w-1/2">
-            <StatCard
-              label="Chemins Approuvés"
-              value={isLoading ? "..." : totalOfficiels}
-              icon={<CheckCircle size={24} />}
-              bgColor="bg-green-100"
-              textColor="text-green-600"
-            />
-          </div>
-        </div>
-
+        <StatCard
+          label="Chemins Approuvés"
+          value={isLoading ? "..." : totalOfficiels}
+          icon={<CheckCircle size={24} />}
+          bgColor="bg-green-100"
+          textColor="text-green-600"
+        />
       </div>
     </div>
   );
