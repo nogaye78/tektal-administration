@@ -8,7 +8,6 @@ const STATUS_COLORS = {
   hidden: "bg-gray-100 text-gray-600",
   APPROVED: "bg-green-100 text-green-600",
   REJECTED: "bg-red-100 text-red-600",
-  deleted: "bg-red-100 text-red-600",
 };
 
 const STATUS_LABELS = {
@@ -17,7 +16,6 @@ const STATUS_LABELS = {
   hidden: "Cache",
   APPROVED: "Approuvé",
   REJECTED: "Refusé",
-  deleted: "Supprimé",
 };
 
 const uploadToCloudinary = async (file) => {
@@ -253,9 +251,6 @@ const Chemins = () => {
                 </button>
                 <button onClick={() => reject(chemin.id)} className="text-orange-400 hover:scale-110 transition" title="Refuser">
                   <X size={22} />
-                </button>
-                <button onClick={() => handleDeleteClick(chemin)} className="text-red-500 hover:scale-110 transition" title="Supprimer">
-                  <Trash2 size={22} />
                 </button>
               </div>
             </div>
