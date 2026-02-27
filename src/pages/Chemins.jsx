@@ -202,9 +202,6 @@ const Chemins = () => {
                 <button onClick={() => reject(chemin.id)} className="text-orange-400 hover:scale-110 transition" title="Refuser">
                   <X size={22} />
                 </button>
-                <button onClick={() => remove(chemin.id)} className="text-red-500 hover:scale-110 transition" title="Supprimer">
-                  <Trash2 size={22} />
-                </button>
               </div>
             </div>
 
