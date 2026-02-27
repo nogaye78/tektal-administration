@@ -228,10 +228,9 @@ const Chemins = () => {
       {showModal && (
   <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4">
     
-    {/* CARD MODAL */}
     <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl relative p-5">
-      
-      {/* CROIX EN HAUT */}
+
+      {/* CROIX MODERNE */}
       <button
         onClick={() => setShowModal(false)}
         className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-500 transition"
@@ -243,7 +242,7 @@ const Chemins = () => {
 
       <form onSubmit={handleCreate} className="space-y-3">
 
-        {/* INPUT TITRE */}
+        {/* TITRE */}
         <input
           type="text"
           placeholder="Titre du parcours"
@@ -257,7 +256,7 @@ const Chemins = () => {
         <div className="grid grid-cols-2 gap-2">
           <input
             type="text"
-            placeholder="Depart"
+            placeholder="Depart (ex: Dakar)"
             value={formData.start_label}
             onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
             className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
@@ -265,11 +264,47 @@ const Chemins = () => {
           />
           <input
             type="text"
-            placeholder="Arrivee"
+            placeholder="Arrivee (ex: Paris)"
             value={formData.end_label}
             onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
             className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
             required
+          />
+        </div>
+
+        {/* LAT LNG */}
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            placeholder="Lat depart (optionnel)"
+            value={formData.start_lat}
+            onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm outline-none"
+            step="any"
+          />
+          <input
+            type="number"
+            placeholder="Lng depart (optionnel)"
+            value={formData.start_lng}
+            onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm outline-none"
+            step="any"
+          />
+          <input
+            type="number"
+            placeholder="Lat arrivee (optionnel)"
+            value={formData.end_lat}
+            onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm outline-none"
+            step="any"
+          />
+          <input
+            type="number"
+            placeholder="Lng arrivee (optionnel)"
+            value={formData.end_lng}
+            onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })}
+            className="border rounded-lg px-3 py-2 text-sm outline-none"
+            step="any"
           />
         </div>
 
@@ -281,13 +316,31 @@ const Chemins = () => {
             <Video size={20} className="text-gray-400 mb-1" />
           )}
 
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-gray-500 mt-1">
             {uploading
-              ? "Upload..."
+              ? "Upload en cours..."
               : videoName
               ? videoName
               : "Choisir une video"}
           </span>
+
+          {formData.video_url && (
+            <span className="text-xs text-green-500 mt-1">
+              Video uploadee ✅
+            </span>
+          )}
+
+          {formData.duration > 0 && (
+            <span className="text-xs text-gray-400">
+              Duree: {formData.duration}s
+            </span>
+          )}
+
+          {uploadError && (
+            <span className="text-xs text-red-500 mt-1">
+              {uploadError}
+            </span>
+          )}
 
           <input
             type="file"
@@ -297,7 +350,77 @@ const Chemins = () => {
           />
         </label>
 
-        {/* BOUTON PLUS PETIT */}
+        {/* ETAPES */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-sm">
+              Etapes ({formData.steps.length}/6)
+            </h3>
+
+            {formData.steps.length < 6 && (
+              <button
+                type="button"
+                onClick={addStep}
+                className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold"
+              >
+                <Plus size={14} />
+                Ajouter
+              </button>
+            )}
+          </div>
+
+          {formData.steps.map((step, index) => (
+            <div key={index} className="border rounded-lg p-3 space-y-2 bg-gray-50">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-semibold text-gray-600">
+                  Etape {step.step_number}
+                </span>
+
+                {formData.steps.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => removeStep(index)}
+                    className="text-red-400 text-xs"
+                  >
+                    Supprimer
+                  </button>
+                )}
+              </div>
+
+              <input
+                type="text"
+                placeholder="Description de l'etape"
+                value={step.text}
+                onChange={(e) => updateStep(index, "text", e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#FEBD00]"
+                required
+              />
+
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  placeholder="Debut"
+                  value={step.start_time}
+                  onChange={(e) => updateStep(index, "start_time", e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm outline-none"
+                  min="0"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Fin"
+                  value={step.end_time}
+                  onChange={(e) => updateStep(index, "end_time", e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm outline-none"
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* BOUTON PLUS COMPACT */}
         <button
           type="submit"
           disabled={creating || uploading}
@@ -309,9 +432,10 @@ const Chemins = () => {
               Creation...
             </>
           ) : (
-            "Creer"
+            "Creer le parcours"
           )}
         </button>
+
       </form>
     </div>
   </div>
