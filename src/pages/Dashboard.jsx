@@ -7,7 +7,6 @@ const Dashboard = () => {
   const { data: chemins, loading: loadingPaths, refetch: refetchPaths } = usePathsList();
   const { data: users, loading: loadingUsers, refetch: refetchUsers } = useConnectedUsers();
 
-  // Recharge les données à chaque fois qu'on arrive sur le Dashboard
   useEffect(() => {
     refetchPaths();
     refetchUsers();
@@ -16,7 +15,7 @@ const Dashboard = () => {
   const totalChemins = chemins?.length || 0;
   const totalUsers = users?.length || 0;
   const totalOfficiels =
-    chemins?.filter((c) => c.status === "APPROVED")?.length || 0;
+    chemins?.filter((c) => c.status === "published")?.length || 0;
 
   const isLoading = loadingPaths || loadingUsers;
 
