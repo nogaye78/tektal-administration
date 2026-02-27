@@ -71,12 +71,12 @@ const Sidebar = ({ isOpen, onClose }) => {
             <NavLink
               key={item.name}
               to={item.path}
-              end={item.path === "/"}
+             end
               onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "bg-[#FEBD00] text-white font-bold shadow-md"
+                  ? "bg-[#FEBD00] text-black font-bold shadow-md"
                     : "text-gray-600 hover:bg-gray-50"
                 }`
               }
