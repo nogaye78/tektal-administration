@@ -1,6 +1,6 @@
 import StatCard from "../components/StatCard";
 import { usePathsList, useConnectedUsers } from "../api/hooks";
-import { Map, Users, CheckCircle, Eye } from "lucide-react";
+import { Map, Users, CheckCircle } from "lucide-react";
 
 const Dashboard = () => {
   const { data: chemins, loading: loadingPaths } = usePathsList();
@@ -11,13 +11,10 @@ const Dashboard = () => {
   const totalOfficiels =
     chemins?.filter((c) => c.status === "APPROVED")?.length || 0;
 
-  const totalVues =
-    chemins?.reduce((acc, c) => acc + (c.views || 0), 0) || 0;
-
   const isLoading = loadingPaths || loadingUsers;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
           Dashboard
@@ -27,11 +24,14 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* GRID PRINCIPAL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        {/* Ligne 1 */}
         <StatCard
           label="Chemins"
           value={isLoading ? "..." : totalChemins}
-          icon={<Map size={22} />}
+          icon={<Map size={24} />}
           bgColor="bg-blue-100"
           textColor="text-blue-600"
         />
@@ -39,26 +39,24 @@ const Dashboard = () => {
         <StatCard
           label="Utilisateurs"
           value={isLoading ? "..." : totalUsers}
-          icon={<Users size={22} />}
+          icon={<Users size={24} />}
           bgColor="bg-purple-100"
           textColor="text-purple-600"
         />
 
-        <StatCard
-          label="Approuvés"
-          value={isLoading ? "..." : totalOfficiels}
-          icon={<CheckCircle size={22} />}
-          bgColor="bg-green-100"
-          textColor="text-green-600"
-        />
+        {/* Ligne 2 centrée */}
+        <div className="md:col-span-2 flex justify-center">
+          <div className="w-full md:w-1/2">
+            <StatCard
+              label="Chemins Approuvés"
+              value={isLoading ? "..." : totalOfficiels}
+              icon={<CheckCircle size={24} />}
+              bgColor="bg-green-100"
+              textColor="text-green-600"
+            />
+          </div>
+        </div>
 
-        <StatCard
-          label="Vues totales"
-          value={isLoading ? "..." : totalVues}
-          icon={<Eye size={22} />}
-          bgColor="bg-yellow-100"
-          textColor="text-yellow-600"
-        />
       </div>
     </div>
   );
