@@ -123,16 +123,16 @@ export const deleteUser = async (id) => {
   });
 };
 
-// ✅ Toggle Admin
+// ✅ Toggle Admin - envoie explicitement role: "admin"
 export const toggleAdmin = async (id) => {
   const token = localStorage.getItem("access_token");
-  const response = await api.post(`users/${id}/toggle-admin/`, {}, {
+  const response = await api.post(`users/${id}/toggle-admin/`, { role: "admin" }, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-// ✅ Toggle Etablissement
+// ✅ Toggle Etablissement - envoie role: "etablissement"
 export const toggleEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "etablissement" }, {
