@@ -1,92 +1,68 @@
 import { useState } from "react";
 import { Search, Users, ShieldCheck, Trash2, X, Building2 } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
-import { deleteUser, updateUserRole } from "../api/apiService";
+import { deleteUser, toggleAdmin, toggleEtablissement } from "../api/apiService";
 
 const Utilisateurs = () => {
   const { data: users, loading, error, refetch } = useConnectedUsers();
   const [search, setSearch] = useState("");
   const [userToDelete, setUserToDelete] = useState(null);
-  const [roleModalUser, setRoleModalUser] = useState(null); // 🔥 nouveau
-
-  const currentUserId = 1;
 
   const handleDelete = async () => {
-    try {
-      await deleteUser(userToDelete.id);
-      setUserToDelete(null);
-      refetch();
-    } catch (err) {
-      console.error(err);
-    }
+    await deleteUser(userToDelete.id);
+    setUserToDelete(null);
+    refetch();
   };
 
-  const handleUpdateRole = async (user, role) => {
-    if (user.id === currentUserId) {
-      alert("Tu ne peux pas modifier ton propre rôle.");
-      return;
-    }
-
-    try {
-      await updateUserRole(user.id, role);
-      setRoleModalUser(null);
-      refetch();
-    } catch (err) {
-      console.error(err);
-    }
+  const handleToggleAdmin = async (id) => {
+    await toggleAdmin(id);
+    refetch();
   };
 
-  const filtered = users?.filter(
-    (u) =>
-      u.username?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase())
+  const handleToggleEtablissement = async (id) => {
+    await toggleEtablissement(id);
+    refetch();
+  };
+
+  const filtered = users?.filter(u =>
+    u.username?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
 
-      {/* 🔥 MODAL CHOIX ROLE */}
-      {roleModalUser && (
+      {userToDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="font-bold text-lg">
-                Modifier le rôle de {roleModalUser.username}
-              </h2>
-              <button onClick={() => setRoleModalUser(null)}>
+              <h2 className="text-lg font-bold text-slate-900">Confirmer la suppression</h2>
+              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
-
-            <div className="space-y-3">
-
+            <p className="text-gray-600 text-sm">
+              Voulez-vous vraiment supprimer <span className="font-bold text-slate-800">{userToDelete.username}</span> ? Cette action est irréversible.
+            </p>
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={() => handleUpdateRole(roleModalUser, "admin")}
-                className="w-full py-2 rounded-xl bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm"
               >
-                👑 Rendre Admin
+                Annuler
               </button>
-
               <button
-                onClick={() => handleUpdateRole(roleModalUser, "establishment")}
-                className="w-full py-2 rounded-xl bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+                onClick={handleDelete}
+                className="flex-1 py-2 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm"
               >
-                🏢 Rendre Établissement
-              </button>
-
-              <button
-                onClick={() => handleUpdateRole(roleModalUser, "user")}
-                className="w-full py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
-              >
-                👤 Rendre Simple Utilisateur
+                Supprimer
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🔍 Recherche */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
@@ -94,45 +70,61 @@ const Utilisateurs = () => {
           placeholder="Rechercher un membre..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 rounded-xl border"
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm"
         />
       </div>
 
-      {/* 📊 Liste */}
       {loading ? (
-        <p className="text-center text-gray-500">Chargement...</p>
-      ) : filtered?.length === 0 ? (
-        <div className="text-center text-gray-400">
-          <Users size={48} className="mx-auto opacity-20" />
-          <p>Aucun utilisateur trouvé</p>
+        <p className="text-gray-500 text-center">Chargement des utilisateurs...</p>
+      ) : error ? (
+        <p className="text-red-500 text-center text-sm">Erreur: {JSON.stringify(error)}</p>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
+          <Users className="mx-auto mb-2 opacity-10" size={48} />
+          <p>Aucun utilisateur trouvé.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((user) => (
-            <div
-              key={user.id}
-              className="bg-white p-4 rounded-xl border flex justify-between items-center"
-            >
-              <div>
-                <h3 className="font-bold text-sm">{user.username}</h3>
-                <p className="text-xs text-gray-400">{user.email}</p>
+            <div key={user.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FEBD00]/20 text-[#FEBD00] flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0">
+                  {user.username?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-bold text-slate-800 text-sm">{user.username}</h3>
+                    {user.role === "admin" && (
+                      <span className="text-xs bg-[#FEBD00]/20 text-[#FEBD00] px-2 py-0.5 rounded-full font-medium">Admin</span>
+                    )}
+                    {user.role === "etablissement" && (
+                      <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full font-medium">Établissement</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">{user.email}</p>
+                </div>
               </div>
-
-              <div className="flex gap-2">
-                {/* 👑 Clique ouvre modal */}
+              <div className="flex gap-2 flex-shrink-0">
                 <button
-                  onClick={() => setRoleModalUser(user)}
-                  className="p-2 rounded-lg bg-gray-100 hover:bg-yellow-100 transition"
+                  title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
+                  className={`p-2 transition-colors ${user.role === "admin" ? "text-[#FEBD00]" : "text-gray-400 hover:text-[#FEBD00]"}`}
+                  onClick={() => handleToggleAdmin(user.id)}
                 >
-                  <ShieldCheck size={18} />
+                  <ShieldCheck size={20} />
                 </button>
-
-                {/* 🗑️ Supprimer */}
                 <button
-                  onClick={() => setUserToDelete(user)}
-                  className="p-2 text-gray-400 hover:text-red-500"
+                  title={user.role === "etablissement" ? "Retirer établissement" : "Rendre établissement"}
+                  className={`p-2 transition-colors ${user.role === "etablissement" ? "text-green-600" : "text-gray-400 hover:text-green-600"}`}
+                  onClick={() => handleToggleEtablissement(user.id)}
                 >
-                  <Trash2 size={18} />
+                  <Building2 size={20} />
+                </button>
+                <button
+                  title="Supprimer"
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                  onClick={() => setUserToDelete(user)}
+                >
+                  <Trash2 size={20} />
                 </button>
               </div>
             </div>
