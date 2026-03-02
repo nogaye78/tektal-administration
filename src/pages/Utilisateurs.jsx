@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X, Building2 } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
-import { deleteUser, toggleAdmin } from "../api/apiService";
+import { deleteUser, updateUserRole } from "../api/apiService";
 
 const Utilisateurs = () => {
   const { data: users, loading, error, refetch } = useConnectedUsers();
   const [search, setSearch] = useState("");
   const [userToDelete, setUserToDelete] = useState(null);
 
-  // ⚠️ Remplace par l'id du user connecté (depuis ton contexte auth)
+  // ⚠️ Récupère l'id du user connecté depuis ton auth context
   const currentUserId = 1;
 
-  // 🔴 Suppression utilisateur
+  // 🔴 Suppression
   const handleDelete = async () => {
     try {
       await deleteUser(userToDelete.id);
@@ -22,30 +22,27 @@ const Utilisateurs = () => {
     }
   };
 
-  // 🛡️ Toggle admin / user
-  const handleToggleAdmin = async (user) => {
+  // 🔄 Changement de rôle
+  const handleUpdateRole = async (user, role) => {
     if (user.id === currentUserId) {
       alert("Tu ne peux pas modifier ton propre rôle.");
       return;
     }
 
     const confirmAction = window.confirm(
-      user.role === "admin"
-        ? "Retirer les droits admin ?"
-        : "Donner les droits admin ?"
+      `Changer le rôle de ${user.username} en ${role} ?`
     );
 
     if (!confirmAction) return;
 
     try {
-      await toggleAdmin(user.id);
+      await updateUserRole(user.id, role);
       refetch();
     } catch (err) {
       console.error("Erreur modification rôle :", err);
     }
   };
 
-  // 🔍 Filtrage sécurisé
   const filtered = users?.filter(
     (u) =>
       u.username?.toLowerCase().includes(search.toLowerCase()) ||
@@ -75,11 +72,11 @@ const Utilisateurs = () => {
             </div>
 
             <p className="text-gray-600 text-sm">
-              Voulez-vous vraiment supprimer{" "}
+              Supprimer{" "}
               <span className="font-bold text-slate-800">
                 {userToDelete.username}
               </span>{" "}
-              ? Cette action est irréversible.
+              ?
             </p>
 
             <div className="flex gap-3 pt-2">
@@ -101,7 +98,7 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* 🔍 Barre recherche */}
+      {/* 🔍 Recherche */}
       <div className="relative">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -116,13 +113,13 @@ const Utilisateurs = () => {
         />
       </div>
 
-      {/* 📊 Contenu */}
+      {/* 📊 Liste */}
       {loading ? (
-        <p className="text-gray-500 text-center">
+        <p className="text-center text-gray-500">
           Chargement des utilisateurs...
         </p>
       ) : error ? (
-        <p className="text-red-500 text-center text-sm">
+        <p className="text-center text-red-500 text-sm">
           Erreur: {JSON.stringify(error)}
         </p>
       ) : filtered?.length === 0 ? (
@@ -138,7 +135,7 @@ const Utilisateurs = () => {
               className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FEBD00]/20 text-[#FEBD00] flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[#FEBD00]/20 text-[#FEBD00] flex items-center justify-center font-bold text-sm">
                   {user.username?.charAt(0).toUpperCase()}
                 </div>
 
@@ -149,8 +146,14 @@ const Utilisateurs = () => {
                     </h3>
 
                     {user.role === "admin" && (
-                      <span className="text-xs bg-[#FEBD00]/20 text-[#FEBD00] px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">
                         Admin
+                      </span>
+                    )}
+
+                    {user.role === "establishment" && (
+                      <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                        Établissement
                       </span>
                     )}
                   </div>
@@ -159,30 +162,50 @@ const Utilisateurs = () => {
                 </div>
               </div>
 
-              {/* 🛠️ Actions */}
-              <div className="flex gap-2 flex-shrink-0">
+              {/* Actions */}
+              <div className="flex gap-2">
+                {/* 👑 Admin */}
                 <button
-                  title={
-                    user.role === "admin"
-                      ? "Retirer admin"
-                      : "Rendre admin"
-                  }
-                  onClick={() => handleToggleAdmin(user)}
+                  title="Rendre admin"
+                  onClick={() => handleUpdateRole(user, "admin")}
                   className={`p-2 rounded-lg transition ${
                     user.role === "admin"
-                      ? "bg-[#FEBD00]/20 text-[#FEBD00]"
-                      : "bg-gray-100 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-[#FEBD00]"
+                      ? "bg-yellow-100 text-yellow-600"
+                      : "bg-gray-100 text-gray-400 hover:bg-yellow-100 hover:text-yellow-600"
                   }`}
                 >
-                  <ShieldCheck size={20} />
+                  <ShieldCheck size={18} />
                 </button>
 
+                {/* 🏢 Établissement */}
+                <button
+                  title="Rendre établissement"
+                  onClick={() => handleUpdateRole(user, "establishment")}
+                  className={`p-2 rounded-lg transition ${
+                    user.role === "establishment"
+                      ? "bg-blue-100 text-blue-600"
+                      : "bg-gray-100 text-gray-400 hover:bg-blue-100 hover:text-blue-600"
+                  }`}
+                >
+                  <Building2 size={18} />
+                </button>
+
+                {/* 👤 User simple */}
+                <button
+                  title="Rendre simple utilisateur"
+                  onClick={() => handleUpdateRole(user, "user")}
+                  className="p-2 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition text-xs"
+                >
+                  User
+                </button>
+
+                {/* 🗑️ Supprimer */}
                 <button
                   title="Supprimer"
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                   onClick={() => setUserToDelete(user)}
+                  className="p-2 text-gray-400 hover:text-red-500 transition"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
