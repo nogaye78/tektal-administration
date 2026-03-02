@@ -8,38 +8,80 @@ const Utilisateurs = () => {
   const [search, setSearch] = useState("");
   const [userToDelete, setUserToDelete] = useState(null);
 
+  // ⚠️ Remplace par l'id du user connecté (depuis ton contexte auth)
+  const currentUserId = 1;
+
+  // 🔴 Suppression utilisateur
   const handleDelete = async () => {
-    await deleteUser(userToDelete.id);
-    setUserToDelete(null);
-    refetch();
+    try {
+      await deleteUser(userToDelete.id);
+      setUserToDelete(null);
+      refetch();
+    } catch (err) {
+      console.error("Erreur suppression :", err);
+    }
   };
 
-  const handleToggleAdmin = async (id) => {
-    await toggleAdmin(id);
-    refetch();
+  // 🛡️ Toggle admin / user
+  const handleToggleAdmin = async (user) => {
+    if (user.id === currentUserId) {
+      alert("Tu ne peux pas modifier ton propre rôle.");
+      return;
+    }
+
+    const confirmAction = window.confirm(
+      user.role === "admin"
+        ? "Retirer les droits admin ?"
+        : "Donner les droits admin ?"
+    );
+
+    if (!confirmAction) return;
+
+    try {
+      await toggleAdmin(user.id);
+      refetch();
+    } catch (err) {
+      console.error("Erreur modification rôle :", err);
+    }
   };
 
-  const filtered = users?.filter(u =>
-    u.username?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
+  // 🔍 Filtrage sécurisé
+  const filtered = users?.filter(
+    (u) =>
+      u.username?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+        Gestion des Utilisateurs
+      </h1>
 
+      {/* 🗑️ MODAL SUPPRESSION */}
       {userToDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-900">Confirmer la suppression</h2>
-              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-lg font-bold text-slate-900">
+                Confirmer la suppression
+              </h2>
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X size={20} />
               </button>
             </div>
+
             <p className="text-gray-600 text-sm">
-              Voulez-vous vraiment supprimer <span className="font-bold text-slate-800">{userToDelete.username}</span> ? Cette action est irréversible.
+              Voulez-vous vraiment supprimer{" "}
+              <span className="font-bold text-slate-800">
+                {userToDelete.username}
+              </span>{" "}
+              ? Cette action est irréversible.
             </p>
+
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setUserToDelete(null)}
@@ -47,6 +89,7 @@ const Utilisateurs = () => {
               >
                 Annuler
               </button>
+
               <button
                 onClick={handleDelete}
                 className="flex-1 py-2 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm"
@@ -58,8 +101,12 @@ const Utilisateurs = () => {
         </div>
       )}
 
+      {/* 🔍 Barre recherche */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          size={20}
+        />
         <input
           type="text"
           placeholder="Rechercher un membre..."
@@ -69,11 +116,16 @@ const Utilisateurs = () => {
         />
       </div>
 
+      {/* 📊 Contenu */}
       {loading ? (
-        <p className="text-gray-500 text-center">Chargement des utilisateurs...</p>
+        <p className="text-gray-500 text-center">
+          Chargement des utilisateurs...
+        </p>
       ) : error ? (
-        <p className="text-red-500 text-center text-sm">Erreur: {JSON.stringify(error)}</p>
-      ) : filtered.length === 0 ? (
+        <p className="text-red-500 text-center text-sm">
+          Erreur: {JSON.stringify(error)}
+        </p>
+      ) : filtered?.length === 0 ? (
         <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
           <Users className="mx-auto mb-2 opacity-10" size={48} />
           <p>Aucun utilisateur trouvé.</p>
@@ -81,29 +133,50 @@ const Utilisateurs = () => {
       ) : (
         <div className="space-y-3">
           {filtered.map((user) => (
-            <div key={user.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+            <div
+              key={user.id}
+              className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#FEBD00]/20 text-[#FEBD00] flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0">
                   {user.username?.charAt(0).toUpperCase()}
                 </div>
+
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-slate-800 text-sm">{user.username}</h3>
+                    <h3 className="font-bold text-slate-800 text-sm">
+                      {user.username}
+                    </h3>
+
                     {user.role === "admin" && (
-                      <span className="text-xs bg-[#FEBD00]/20 text-[#FEBD00] px-2 py-0.5 rounded-full font-medium">Admin</span>
+                      <span className="text-xs bg-[#FEBD00]/20 text-[#FEBD00] px-2 py-0.5 rounded-full font-medium">
+                        Admin
+                      </span>
                     )}
                   </div>
+
                   <p className="text-xs text-gray-400">{user.email}</p>
                 </div>
               </div>
+
+              {/* 🛠️ Actions */}
               <div className="flex gap-2 flex-shrink-0">
                 <button
-                  title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
-                  className={`p-2 transition-colors ${user.role === "admin" ? "text-[#FEBD00]" : "text-gray-400 hover:text-[#FEBD00]"}`}
-                  onClick={() => handleToggleAdmin(user.id)}
+                  title={
+                    user.role === "admin"
+                      ? "Retirer admin"
+                      : "Rendre admin"
+                  }
+                  onClick={() => handleToggleAdmin(user)}
+                  className={`p-2 rounded-lg transition ${
+                    user.role === "admin"
+                      ? "bg-[#FEBD00]/20 text-[#FEBD00]"
+                      : "bg-gray-100 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-[#FEBD00]"
+                  }`}
                 >
                   <ShieldCheck size={20} />
                 </button>
+
                 <button
                   title="Supprimer"
                   className="p-2 text-gray-400 hover:text-red-500 transition-colors"
