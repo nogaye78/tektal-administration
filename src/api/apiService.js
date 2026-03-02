@@ -1,9 +1,7 @@
 import axios from "axios";
 
-// 🔹 Backend base URL
 const BASE_URL = "https://tektal-backend.onrender.com";
 
-// Axios instances
 const api = axios.create({
   baseURL: `${BASE_URL}/admin-panel/api/`,
 });
@@ -12,7 +10,6 @@ const pathsApi = axios.create({
   baseURL: `${BASE_URL}/api/`,
 });
 
-// 🔹 Interceptor pour refresh token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -47,9 +44,8 @@ export const login = async (email, password) => {
     });
     const user = profileRes.data;
 
-    // ✅ Accepte admin et etablissement
     if (user.role !== "admin" && user.role !== "etablissement") {
-      throw new Error("Accès non autorisé.");
+      throw new Error("Acces non autorise.");
     }
 
     localStorage.setItem("access_token", access);
@@ -127,7 +123,7 @@ export const deleteUser = async (id) => {
   });
 };
 
-// 🔹 Toggle rôle dynamique : admin / etablissement / participant
+// ✅ Toggle rôle dynamique
 export const toggleUserRole = async (id, role) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-role/`, { role }, {
@@ -136,7 +132,41 @@ export const toggleUserRole = async (id, role) => {
   return response.data;
 };
 
-// 🔹 Ancienne fonction toggleAdmin (pour compatibilité)
+// ✅ Toggle Admin
 export const toggleAdmin = async (id) => {
   return toggleUserRole(id, "admin");
+};
+
+// ✅ Toggle Etablissement
+export const toggleEtablissement = async (id) => {
+  return toggleUserRole(id, "etablissement");
+};
+
+// ===========================
+// ETABLISSEMENTS
+// ===========================
+export const fetchEtablissements = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await api.get("etablissements/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createEtablissement = async (formData) => {
+  const token = localStorage.getItem("access_token");
+  const response = await api.post("etablissements/", formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+export const deleteEtablissement = async (id) => {
+  const token = localStorage.getItem("access_token");
+  await api.delete(`etablissements/${id}/delete/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };
