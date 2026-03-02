@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Map, Trash2, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 
 const STATUS_COLORS = {
@@ -33,33 +33,29 @@ const CheminDetailModal = ({ chemin, onClose }) => {
   if (!chemin) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 px-4 py-8 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-lg relative">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 px-4 py-8">
+      <div className="bg-white rounded-2xl w-full max-w-lg relative flex flex-col max-h-[85vh]">
+
+        {/* ✅ Header fixe */}
+        <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
           <h2 className="text-lg font-bold text-slate-900">{chemin.title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-black cursor-pointer transition"
+            className="text-gray-400 hover:text-black cursor-pointer transition p-1 rounded-lg hover:bg-gray-100"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
-          {/* Vidéo */}
+        {/* ✅ Contenu scrollable */}
+        <div className="p-4 space-y-4 overflow-y-auto">
           {chemin.video_url && (
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Video</h3>
-              <video
-                src={chemin.video_url}
-                controls
-                className="w-full rounded-xl max-h-48 bg-black"
-              />
+              <video src={chemin.video_url} controls className="w-full rounded-xl max-h-48 bg-black" />
             </div>
           )}
 
-          {/* Infos */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Depart</p>
@@ -95,7 +91,6 @@ const CheminDetailModal = ({ chemin, onClose }) => {
             </div>
           </div>
 
-          {/* Étapes */}
           {chemin.steps && chemin.steps.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -131,7 +126,7 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
-  const { approve, reject } = usePathActions(refetch); // ✅ supprimé remove
+  const { approve, reject } = usePathActions(refetch);
   const { create, loading: creating } = useCreatePath(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -292,7 +287,6 @@ const Chemins = () => {
               </div>
 
               <div className="flex gap-2 self-end sm:self-auto items-center flex-wrap">
-                {/* Detail */}
                 <button
                   onClick={() => setSelectedChemin(chemin)}
                   className="flex items-center gap-1 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition cursor-pointer"
@@ -300,7 +294,6 @@ const Chemins = () => {
                   <Eye size={14} /> Detail
                 </button>
 
-                {/* Vidéo */}
                 {chemin.video_url && (
                   <button
                     onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
@@ -311,7 +304,6 @@ const Chemins = () => {
                   </button>
                 )}
 
-                {/* ✅ Approuver */}
                 <button
                   onClick={() => approve(chemin.id)}
                   className="text-green-500 hover:text-green-600 transition cursor-pointer"
@@ -320,7 +312,6 @@ const Chemins = () => {
                   <CheckCircle size={22} />
                 </button>
 
-                {/* ✅ Refuser - pas de suppression */}
                 <button
                   onClick={() => reject(chemin.id)}
                   className="text-orange-400 hover:text-orange-500 transition cursor-pointer"
@@ -340,7 +331,6 @@ const Chemins = () => {
         ))}
       </div>
 
-      {/* Modal détail */}
       {selectedChemin && (
         <CheminDetailModal
           chemin={selectedChemin}
@@ -348,7 +338,6 @@ const Chemins = () => {
         />
       )}
 
-      {/* Modal création */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 overflow-y-auto py-8">
           <div className="bg-white p-6 rounded-2xl w-full max-w-2xl space-y-4 relative">
