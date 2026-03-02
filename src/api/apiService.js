@@ -123,7 +123,7 @@ export const deleteUser = async (id) => {
   });
 };
 
-// ✅ Toggle Admin - utilise l'URL existante toggle-admin
+// ✅ Toggle Admin
 export const toggleAdmin = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, {}, {
@@ -132,40 +132,11 @@ export const toggleAdmin = async (id) => {
   return response.data;
 };
 
-// ✅ Toggle Etablissement - utilise aussi toggle-admin mais envoie role=etablissement
+// ✅ Toggle Etablissement
 export const toggleEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "etablissement" }, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-};
-
-// ===========================
-// ETABLISSEMENTS
-// ===========================
-export const fetchEtablissements = async () => {
-  const token = localStorage.getItem("access_token");
-  const response = await api.get("etablissements/", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
-
-export const createEtablissement = async (formData) => {
-  const token = localStorage.getItem("access_token");
-  const response = await api.post("etablissements/", formData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-  return response.data;
-};
-
-export const deleteEtablissement = async (id) => {
-  const token = localStorage.getItem("access_token");
-  await api.delete(`etablissements/${id}/delete/`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
 };
