@@ -123,23 +123,22 @@ export const deleteUser = async (id) => {
   });
 };
 
-// ✅ Toggle rôle dynamique
-export const toggleUserRole = async (id, role) => {
+// ✅ Toggle Admin - utilise l'URL existante toggle-admin
+export const toggleAdmin = async (id) => {
   const token = localStorage.getItem("access_token");
-  const response = await api.post(`users/${id}/toggle-role/`, { role }, {
+  const response = await api.post(`users/${id}/toggle-admin/`, {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
-// ✅ Toggle Admin
-export const toggleAdmin = async (id) => {
-  return toggleUserRole(id, "admin");
-};
-
-// ✅ Toggle Etablissement
+// ✅ Toggle Etablissement - utilise aussi toggle-admin mais envoie role=etablissement
 export const toggleEtablissement = async (id) => {
-  return toggleUserRole(id, "etablissement");
+  const token = localStorage.getItem("access_token");
+  const response = await api.post(`users/${id}/toggle-admin/`, { role: "etablissement" }, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
 };
 
 // ===========================
