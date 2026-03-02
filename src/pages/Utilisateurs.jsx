@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X, Building2 } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
 import { deleteUser, updateUserRole } from "../api/apiService";
 
@@ -9,7 +9,7 @@ const Utilisateurs = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [roleModalUser, setRoleModalUser] = useState(null);
 
-  // Remplace par ton auth context si besoin
+  // 🔴 Remplace par ton auth context si besoin
   const currentUserId = 1;
 
   // 🔴 Supprimer utilisateur
@@ -61,7 +61,7 @@ const Utilisateurs = () => {
               </button>
             </div>
             <p>
-              Supprimer <b>{userToDelete.username ?? ""}</b> ? Cette action est irréversible.
+              Supprimer <b>{userToDelete?.username ?? ""}</b> ? Cette action est irréversible.
             </p>
             <div className="flex gap-3 pt-2">
               <button
@@ -147,6 +147,12 @@ const Utilisateurs = () => {
               <div>
                 <h3 className="font-bold text-sm">{user.username}</h3>
                 <p className="text-xs text-gray-400">{user.email}</p>
+                {user.role === "admin" && (
+                  <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">Admin</span>
+                )}
+                {user.role === "establishment" && (
+                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Établissement</span>
+                )}
               </div>
 
               <div className="flex gap-2">
