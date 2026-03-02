@@ -19,11 +19,13 @@ const Login = () => {
     try {
       const { user } = await login(email, password);
 
-      //  Vérifie le rôle depuis la base de données
+      // ✅ Redirection selon le rôle
       if (user.role === "admin") {
         navigate("/dashboard");
+      } else if (user.role === "etablissement") {
+        navigate("/mes-chemins");
       } else {
-        setError("Accès réservé aux administrateurs.");
+        setError("Acces non autorise.");
         localStorage.clear();
       }
     } catch (err) {
@@ -40,7 +42,7 @@ const Login = () => {
         className="bg-white p-6 sm:p-8 rounded-2xl shadow-md w-full max-w-sm space-y-5"
       >
         <div className="text-center">
-          <h1 className="text-xl font-bold text-[#FEBD00]">Tektal Admin</h1>
+          <h1 className="text-xl font-bold text-[#FEBD00]">Tektal</h1>
           <h2 className="text-2xl font-bold text-slate-900 mt-1">Connexion</h2>
         </div>
 

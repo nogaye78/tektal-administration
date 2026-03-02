@@ -31,6 +31,7 @@ api.interceptors.response.use(
   }
 );
 
+// ✅ Accepte admin ET etablissement
 export const login = async (email, password) => {
   try {
     const tokenRes = await axios.post(`${BASE_URL}/api/auth/jwt/create/`, {
@@ -38,16 +39,21 @@ export const login = async (email, password) => {
       password,
     });
     const { access, refresh } = tokenRes.data;
+
     const profileRes = await axios.get(`${BASE_URL}/api/auth/users/me/`, {
       headers: { Authorization: `Bearer ${access}` },
     });
     const user = profileRes.data;
-    if (user.role !== "admin") {
-      throw new Error("Acces reserve aux administrateurs.");
+
+    // ✅ Accepte admin et etablissement
+    if (user.role !== "admin" && user.role !== "etablissement") {
+      throw new Error("Acces non autorise.");
     }
+
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
     localStorage.setItem("user", JSON.stringify(user));
+
     return { access, refresh, user };
   } catch (err) {
     throw new Error(
@@ -58,7 +64,6 @@ export const login = async (email, password) => {
   }
 };
 
-// ✅ Utilise admin-panel qui retourne TOUS les parcours
 export const fetchPaths = async () => {
   const token = localStorage.getItem("access_token");
   const response = await api.get("paths/", {
