@@ -9,10 +9,10 @@ const Utilisateurs = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [roleModalUser, setRoleModalUser] = useState(null);
 
-  // 🔹 Remplace avec ton contexte d'auth si besoin
+  // Remplace par ton auth context si besoin
   const currentUserId = 1;
 
-  // 🔴 Supprimer un utilisateur
+  // 🔴 Supprimer utilisateur
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
@@ -24,7 +24,7 @@ const Utilisateurs = () => {
     }
   };
 
-  // 🔄 Mettre à jour le rôle
+  // 🔄 Mettre à jour rôle
   const handleUpdateRole = async (user, role) => {
     if (!user) return;
     if (user.id === currentUserId) {
@@ -50,7 +50,7 @@ const Utilisateurs = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
 
-      {/* 🔹 Modal pour suppression */}
+      {/* Modal suppression */}
       {userToDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
@@ -60,7 +60,9 @@ const Utilisateurs = () => {
                 <X size={20} />
               </button>
             </div>
-            <p>Supprimer <b>{userToDelete.username}</b> ? Cette action est irréversible.</p>
+            <p>
+              Supprimer <b>{userToDelete.username ?? ""}</b> ? Cette action est irréversible.
+            </p>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setUserToDelete(null)}
@@ -79,12 +81,14 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* 🔹 Modal pour choix du rôle */}
+      {/* Modal rôle */}
       {roleModalUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="font-bold text-lg">Modifier le rôle de {roleModalUser.username}</h2>
+              <h2 className="font-bold text-lg">
+                Modifier le rôle de {roleModalUser?.username ?? ""}
+              </h2>
               <button onClick={() => setRoleModalUser(null)}>
                 <X size={20} />
               </button>
@@ -113,7 +117,7 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* 🔹 Recherche */}
+      {/* Recherche */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
@@ -125,7 +129,7 @@ const Utilisateurs = () => {
         />
       </div>
 
-      {/* 🔹 Liste des utilisateurs */}
+      {/* Liste utilisateurs */}
       {loading ? (
         <p className="text-center text-gray-500">Chargement...</p>
       ) : filtered?.length === 0 ? (
@@ -136,14 +140,17 @@ const Utilisateurs = () => {
       ) : (
         <div className="space-y-3">
           {filtered.map((user) => (
-            <div key={user.id} className="bg-white p-4 rounded-xl border flex justify-between items-center">
+            <div
+              key={user.id}
+              className="bg-white p-4 rounded-xl border flex justify-between items-center"
+            >
               <div>
                 <h3 className="font-bold text-sm">{user.username}</h3>
                 <p className="text-xs text-gray-400">{user.email}</p>
               </div>
 
               <div className="flex gap-2">
-                {/* 👑 Clique ouvre modal */}
+                {/* Ouvrir modal rôle */}
                 <button
                   onClick={() => setRoleModalUser(user)}
                   className="p-2 rounded-lg bg-gray-100 hover:bg-yellow-100 transition"
@@ -151,7 +158,7 @@ const Utilisateurs = () => {
                   <ShieldCheck size={18} />
                 </button>
 
-                {/* 🗑️ Supprimer */}
+                {/* Supprimer */}
                 <button
                   onClick={() => setUserToDelete(user)}
                   className="p-2 text-gray-400 hover:text-red-500"
