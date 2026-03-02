@@ -29,91 +29,84 @@ const uploadToCloudinary = async (file) => {
   return { secure_url: data.secure_url, duration: Math.round(data.duration || 60) };
 };
 
-// ✅ Modal détail chemin
 const CheminDetailModal = ({ chemin, onClose }) => {
   if (!chemin) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 px-4 py-8 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-2xl relative">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold text-slate-900">{chemin.title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-black">
-            <X size={20} />
+      <div className="bg-white rounded-2xl w-full max-w-lg relative">
+        {/* ✅ Header avec croix */}
+        <div className="flex justify-between items-center px-5 py-4 border-b">
+          <h2 className="text-base font-bold text-slate-900 truncate pr-4">{chemin.title}</h2>
+          <button
+            onClick={onClose}
+            className="cursor-pointer text-gray-400 hover:text-black hover:bg-gray-100 rounded-full p-1 transition flex-shrink-0"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-5 space-y-4">
           {/* Vidéo */}
           {chemin.video_url && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Video</h3>
-              <video
-                src={chemin.video_url}
-                controls
-                className="w-full rounded-xl max-h-64 bg-black"
-              />
-            </div>
+            <video
+              src={chemin.video_url}
+              controls
+              className="w-full rounded-xl max-h-48 bg-black"
+            />
           )}
 
-          {/* Infos générales */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-xl p-4">
+          {/* Infos */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Depart</p>
-              <p className="font-semibold text-slate-800">{chemin.start_label || "-"}</p>
+              <p className="font-semibold text-slate-800 text-sm">{chemin.start_label || "-"}</p>
               {chemin.start_lat && (
-                <p className="text-xs text-gray-400 mt-1">
-                  {chemin.start_lat}, {chemin.start_lng}
-                </p>
+                <p className="text-xs text-gray-400">{chemin.start_lat}, {chemin.start_lng}</p>
               )}
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Arrivee</p>
-              <p className="font-semibold text-slate-800">{chemin.end_label || "-"}</p>
+              <p className="font-semibold text-slate-800 text-sm">{chemin.end_label || "-"}</p>
               {chemin.end_lat && (
-                <p className="text-xs text-gray-400 mt-1">
-                  {chemin.end_lat}, {chemin.end_lng}
-                </p>
+                <p className="text-xs text-gray-400">{chemin.end_lat}, {chemin.end_lng}</p>
               )}
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Auteur</p>
-              <p className="font-semibold text-slate-800">{chemin.author || "-"}</p>
+              <p className="font-semibold text-slate-800 text-sm">{chemin.author || "-"}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Duree</p>
-              <p className="font-semibold text-slate-800">{chemin.duration ? `${chemin.duration}s` : "-"}</p>
+              <p className="font-semibold text-slate-800 text-sm">{chemin.duration ? `${chemin.duration}s` : "-"}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Statut</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
                 {STATUS_LABELS[chemin.status] || chemin.status}
               </span>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-400 mb-1">Officiel</p>
-              <p className="font-semibold text-slate-800">{chemin.is_official ? "Oui" : "Non"}</p>
+              <p className="font-semibold text-slate-800 text-sm">{chemin.is_official ? "Oui" : "Non"}</p>
             </div>
           </div>
 
           {/* Étapes */}
           {chemin.steps && chemin.steps.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">
                 Etapes ({chemin.steps.length})
               </h3>
               <div className="space-y-2">
                 {chemin.steps.map((step, index) => (
-                  <div key={index} className="border rounded-xl p-3 bg-gray-50 flex gap-4 items-start">
-                    <div className="w-7 h-7 rounded-full bg-[#FEBD00] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  <div key={index} className="border rounded-xl p-3 bg-gray-50 flex gap-3 items-start">
+                    <div className="w-6 h-6 rounded-full bg-[#FEBD00] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {step.step_number}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-slate-800 font-medium">{step.text}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {step.start_time}s → {step.end_time}s
-                      </p>
+                      <p className="text-sm text-slate-800">{step.text}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{step.start_time}s → {step.end_time}s</p>
                     </div>
                   </div>
                 ))}
@@ -121,7 +114,6 @@ const CheminDetailModal = ({ chemin, onClose }) => {
             </div>
           )}
 
-          {/* Date de création */}
           {chemin.created_at && (
             <p className="text-xs text-gray-400 text-right">
               Cree le : {new Date(chemin.created_at).toLocaleDateString("fr-FR")}
@@ -141,7 +133,7 @@ const Chemins = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [selectedChemin, setSelectedChemin] = useState(null); // ✅ chemin sélectionné pour le détail
+  const [selectedChemin, setSelectedChemin] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [videoName, setVideoName] = useState("");
@@ -249,7 +241,7 @@ const Chemins = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Gestion des Chemins</h1>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2 rounded-xl transition w-full sm:w-auto"
+          className="cursor-pointer flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2 rounded-xl transition w-full sm:w-auto"
         >
           <PlusCircle size={18} /> Creer un parcours
         </button>
@@ -284,11 +276,10 @@ const Chemins = () => {
                 <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
                 <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
                 <p className="text-xs text-gray-400">Auteur : {chemin.author}</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
                     {STATUS_LABELS[chemin.status] || chemin.status}
                   </span>
-                  {/* ✅ Nombre d'étapes */}
                   {chemin.steps && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
                       {chemin.steps.length} etape{chemin.steps.length > 1 ? "s" : ""}
@@ -298,33 +289,50 @@ const Chemins = () => {
               </div>
 
               <div className="flex gap-2 self-end sm:self-auto items-center flex-wrap">
-                {/* ✅ Bouton détail */}
+                {/* ✅ Détail */}
                 <button
                   onClick={() => setSelectedChemin(chemin)}
-                  className="flex items-center gap-1 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition"
+                  className="cursor-pointer flex items-center gap-1 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition"
                 >
                   <Eye size={14} /> Detail
                 </button>
 
-                {/* Bouton vidéo */}
+                {/* ✅ Vidéo */}
                 {chemin.video_url && (
                   <button
                     onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
-                    className="flex items-center gap-1 text-xs text-blue-500 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition"
+                    className="cursor-pointer flex items-center gap-1 text-xs text-blue-500 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition"
                   >
                     <Video size={14} />
                     {expandedVideo === chemin.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
                 )}
 
-                <button onClick={() => approve(chemin.id)} className="text-green-500 hover:scale-110 transition" title="Approuver">
+                {/* ✅ Approuver */}
+                <button
+                  onClick={() => approve(chemin.id)}
+                  className="cursor-pointer text-green-500 hover:text-green-600 hover:scale-110 transition"
+                  title="Approuver"
+                >
                   <CheckCircle size={22} />
                 </button>
-                <button onClick={() => reject(chemin.id)} className="text-orange-400 hover:scale-110 transition" title="Refuser">
+
+                {/* ✅ Refuser */}
+                <button
+                  onClick={() => reject(chemin.id)}
+                  className="cursor-pointer text-orange-400 hover:text-orange-500 hover:scale-110 transition"
+                  title="Refuser"
+                >
                   <X size={22} />
                 </button>
-                <button onClick={() => remove(chemin.id)} className="text-red-500 hover:scale-110 transition" title="Supprimer">
-                  <Trash2 size={22} />
+
+                {/* ✅ Supprimer - texte discret sans icône rouge */}
+                <button
+                  onClick={() => remove(chemin.id)}
+                  className="cursor-pointer text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-200 px-2 py-1.5 rounded-lg transition"
+                  title="Supprimer"
+                >
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
@@ -338,7 +346,7 @@ const Chemins = () => {
         ))}
       </div>
 
-      {/* ✅ Modal détail */}
+      {/* Modal détail */}
       {selectedChemin && (
         <CheminDetailModal
           chemin={selectedChemin}
@@ -350,10 +358,15 @@ const Chemins = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 overflow-y-auto py-8">
           <div className="bg-white p-6 rounded-2xl w-full max-w-2xl space-y-4 relative">
-            <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-gray-400 hover:text-black">
-              <X size={18} />
-            </button>
-            <h2 className="text-xl font-bold">Nouveau Parcours</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Nouveau Parcours</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="cursor-pointer text-gray-400 hover:text-black hover:bg-gray-100 rounded-full p-1 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <input
@@ -418,7 +431,7 @@ const Chemins = () => {
                   <h3 className="font-semibold text-sm">Etapes ({formData.steps.length}/6)</h3>
                   {formData.steps.length < 6 && (
                     <button type="button" onClick={addStep}
-                      className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold">
+                      className="cursor-pointer flex items-center gap-1 text-xs text-[#FEBD00] font-semibold">
                       <Plus size={14} /> Ajouter etape
                     </button>
                   )}
@@ -429,7 +442,7 @@ const Chemins = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold text-gray-600">Etape {step.step_number}</span>
                       {formData.steps.length > 2 && (
-                        <button type="button" onClick={() => removeStep(index)} className="text-red-400 text-xs">
+                        <button type="button" onClick={() => removeStep(index)} className="cursor-pointer text-red-400 text-xs hover:text-red-600">
                           Supprimer
                         </button>
                       )}
@@ -464,7 +477,7 @@ const Chemins = () => {
               <button
                 type="submit"
                 disabled={creating || uploading}
-                className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2"
+                className="cursor-pointer w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2"
               >
                 {creating ? <><Loader2 size={18} className="animate-spin" /> Creation...</> : "Creer le parcours"}
               </button>
