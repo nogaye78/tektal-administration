@@ -78,7 +78,7 @@ const Dashboard = () => {
                 <span className="text-blue-400 text-sm font-medium">Espace Etablissement</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                Bonjour, {user.username || "Etablissement"} 👋
+                Bonjour, {user.username || "Etablissement"}
               </h1>
               <p className="text-slate-400 text-sm mt-1">
                 Voici l'apercu de votre activite
