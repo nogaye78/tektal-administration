@@ -19,26 +19,17 @@ const StatCard = ({ label, value, icon, bgColor, textColor, subtitle }) => (
   </div>
 );
 
-const ProgressBar = ({ label, value, total, color }) => {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-slate-600 font-medium">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-800">{value}</span>
-          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{pct}%</span>
-        </div>
-      </div>
-      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full ${color} rounded-full transition-all duration-700 ease-out`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+const SummaryRow = ({ label, value, color, bg, icon, loading }) => (
+  <div className={`flex items-center justify-between p-3.5 ${bg} rounded-xl`}>
+    <div className={`flex items-center gap-2 ${color} font-medium text-sm`}>
+      {icon}
+      {label}
     </div>
-  );
-};
+    <span className={`font-bold text-lg ${color}`}>
+      {loading ? "..." : value}
+    </span>
+  </div>
+);
 
 const Dashboard = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -76,21 +67,33 @@ const Dashboard = () => {
 
         {/* Header */}
         <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full -translate-y-10 translate-x-10" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FEBD00]/10 rounded-full translate-y-6 -translate-x-6" />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <Building2 size={16} className="text-blue-400" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full -translate-y-16 translate-x-16" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#FEBD00]/10 rounded-full translate-y-10 -translate-x-10" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Building2 size={16} className="text-blue-400" />
+                </div>
+                <span className="text-blue-400 text-sm font-medium">Espace Etablissement</span>
               </div>
-              <span className="text-blue-400 text-sm font-medium">Espace Etablissement</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                Bonjour, {user.username || "Etablissement"} 👋
+              </h1>
+              <p className="text-slate-400 text-sm mt-1">
+                Voici l'apercu de votre activite
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">
-              Bonjour, {user.username || "Etablissement"} 👋
-            </h1>
-            <p className="text-slate-400 text-sm mt-1">
-              Voici l'apercu de votre activite aujourd'hui
-            </p>
+            <div className="flex gap-3 flex-wrap">
+              <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-bold text-white">{isLoading ? "..." : totalCheiminsEtab}</p>
+                <p className="text-xs text-slate-400 mt-0.5">Chemins</p>
+              </div>
+              <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl font-bold text-green-400">{isLoading ? "..." : cheminsApprouvesEtab}</p>
+                <p className="text-xs text-slate-400 mt-0.5">Approuves</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -126,54 +129,14 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Progression + Résumé */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Barre de progression */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-slate-800">Statut des chemins</h2>
-              <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-                {totalCheiminsEtab} total
-              </span>
-            </div>
-            {totalCheiminsEtab > 0 ? (
-              <div className="space-y-4">
-                <ProgressBar label="Approuves" value={cheminsApprouvesEtab} total={totalCheiminsEtab} color="bg-green-500" />
-                <ProgressBar label="En attente" value={cheminsAttenteEtab} total={totalCheiminsEtab} color="bg-[#FEBD00]" />
-                <ProgressBar label="Refuses" value={cheminsRefusesEtab} total={totalCheiminsEtab} color="bg-red-400" />
-              </div>
-            ) : (
-              <div className="text-center py-6 text-gray-400">
-                <Map className="mx-auto mb-2 opacity-20" size={32} />
-                <p className="text-sm">Aucun chemin cree</p>
-              </div>
-            )}
-          </div>
-
-          {/* Résumé rapide */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-            <h2 className="font-bold text-slate-800">Resume rapide</h2>
-            <div className="space-y-3">
-              {[
-                { label: "Chemins approuves", value: cheminsApprouvesEtab, color: "text-green-500", bg: "bg-green-50", icon: <CheckCircle size={16} /> },
-                { label: "Chemins en attente", value: cheminsAttenteEtab, color: "text-yellow-600", bg: "bg-yellow-50", icon: <Clock size={16} /> },
-                { label: "Chemins refuses", value: cheminsRefusesEtab, color: "text-red-500", bg: "bg-red-50", icon: <XCircle size={16} /> },
-              ].map((item) => (
-                <div key={item.label} className={`flex items-center justify-between p-3 ${item.bg} rounded-xl`}>
-                  <div className={`flex items-center gap-2 ${item.color} font-medium text-sm`}>
-                    {item.icon}
-                    {item.label}
-                  </div>
-                  <span className={`font-bold text-lg ${item.color}`}>
-                    {isLoading ? "..." : item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+        {/* Resume */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <h2 className="font-bold text-slate-800 mb-4">Resume des chemins</h2>
+          <SummaryRow label="Chemins approuves" value={cheminsApprouvesEtab} color="text-green-500" bg="bg-green-50" icon={<CheckCircle size={16} />} loading={isLoading} />
+          <SummaryRow label="Chemins en attente" value={cheminsAttenteEtab} color="text-yellow-600" bg="bg-yellow-50" icon={<Clock size={16} />} loading={isLoading} />
+          <SummaryRow label="Chemins refuses" value={cheminsRefusesEtab} color="text-red-500" bg="bg-red-50" icon={<XCircle size={16} />} loading={isLoading} />
         </div>
+
       </div>
     );
   }
@@ -186,19 +149,33 @@ const Dashboard = () => {
 
       {/* Header */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-[#FEBD00]/10 rounded-full -translate-y-10 translate-x-10" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full translate-y-6 -translate-x-6" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-[#FEBD00]/20 flex items-center justify-center">
-              <Users size={16} className="text-[#FEBD00]" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-[#FEBD00]/10 rounded-full -translate-y-16 translate-x-16" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full translate-y-10 -translate-x-10" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-[#FEBD00]/20 flex items-center justify-center">
+                <Users size={16} className="text-[#FEBD00]" />
+              </div>
+              <span className="text-[#FEBD00] text-sm font-medium">Panneau Administrateur</span>
             </div>
-            <span className="text-[#FEBD00] text-sm font-medium">Panneau Administrateur</span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h1>
+            <p className="text-slate-400 text-sm mt-1">Apercu global de la plateforme Tektal</p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Apercu global de la plateforme Tektal
-          </p>
+          <div className="flex gap-3 flex-wrap">
+            <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-white">{isLoading ? "..." : totalChemins}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Chemins</p>
+            </div>
+            <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-[#FEBD00]">{isLoading ? "..." : totalUsers}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Utilisateurs</p>
+            </div>
+            <div className="bg-white/10 rounded-xl px-4 py-3 text-center">
+              <p className="text-2xl font-bold text-orange-400">{isLoading ? "..." : totalEtablissements}</p>
+              <p className="text-xs text-slate-400 mt-0.5">Etablissements</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -235,82 +212,46 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats chemins */}
-      <div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
-          Statut des chemins
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label="Approuves"
-            value={isLoading ? "..." : cheminsApprouves}
-            icon={<CheckCircle size={20} />}
-            bgColor="bg-green-100"
-            textColor="text-green-500"
-          />
-          <StatCard
-            label="En Attente"
-            value={isLoading ? "..." : cheminsEnAttente}
-            icon={<Clock size={20} />}
-            bgColor="bg-yellow-100"
-            textColor="text-yellow-600"
-          />
-          <StatCard
-            label="Refuses"
-            value={isLoading ? "..." : cheminsRefuses}
-            icon={<XCircle size={20} />}
-            bgColor="bg-red-100"
-            textColor="text-red-500"
-          />
-        </div>
-      </div>
-
-      {/* Progression + Résumé */}
+      {/* Stats chemins + Resume */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {/* Barre progression */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-slate-800">Taux d'approbation</h2>
-            <span className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-              {totalChemins} chemins
-            </span>
+        {/* Stats chemins */}
+        <div className="space-y-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            Statut des chemins
+          </p>
+          <div className="grid grid-cols-1 gap-3">
+            <StatCard
+              label="Approuves"
+              value={isLoading ? "..." : cheminsApprouves}
+              icon={<CheckCircle size={20} />}
+              bgColor="bg-green-100"
+              textColor="text-green-500"
+            />
+            <StatCard
+              label="En Attente"
+              value={isLoading ? "..." : cheminsEnAttente}
+              icon={<Clock size={20} />}
+              bgColor="bg-yellow-100"
+              textColor="text-yellow-600"
+            />
+            <StatCard
+              label="Refuses"
+              value={isLoading ? "..." : cheminsRefuses}
+              icon={<XCircle size={20} />}
+              bgColor="bg-red-100"
+              textColor="text-red-500"
+            />
           </div>
-          {totalChemins > 0 ? (
-            <div className="space-y-4">
-              <ProgressBar label="Approuves" value={cheminsApprouves} total={totalChemins} color="bg-green-500" />
-              <ProgressBar label="En attente" value={cheminsEnAttente} total={totalChemins} color="bg-[#FEBD00]" />
-              <ProgressBar label="Refuses" value={cheminsRefuses} total={totalChemins} color="bg-red-400" />
-            </div>
-          ) : (
-            <div className="text-center py-6 text-gray-400">
-              <Map className="mx-auto mb-2 opacity-20" size={32} />
-              <p className="text-sm">Aucun chemin disponible</p>
-            </div>
-          )}
         </div>
 
-        {/* Résumé rapide */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-bold text-slate-800">Resume rapide</h2>
-          <div className="space-y-3">
-            {[
-              { label: "Chemins approuves", value: cheminsApprouves, color: "text-green-500", bg: "bg-green-50", icon: <CheckCircle size={16} /> },
-              { label: "Chemins en attente", value: cheminsEnAttente, color: "text-yellow-600", bg: "bg-yellow-50", icon: <Clock size={16} /> },
-              { label: "Chemins refuses", value: cheminsRefuses, color: "text-red-500", bg: "bg-red-50", icon: <XCircle size={16} /> },
-              { label: "Etablissements", value: totalEtablissements, color: "text-orange-500", bg: "bg-orange-50", icon: <Building2 size={16} /> },
-            ].map((item) => (
-              <div key={item.label} className={`flex items-center justify-between p-3 ${item.bg} rounded-xl`}>
-                <div className={`flex items-center gap-2 ${item.color} font-medium text-sm`}>
-                  {item.icon}
-                  {item.label}
-                </div>
-                <span className={`font-bold text-lg ${item.color}`}>
-                  {isLoading ? "..." : item.value}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Resume rapide */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+          <h2 className="font-bold text-slate-800 mb-4">Resume rapide</h2>
+          <SummaryRow label="Chemins approuves" value={cheminsApprouves} color="text-green-500" bg="bg-green-50" icon={<CheckCircle size={16} />} loading={isLoading} />
+          <SummaryRow label="Chemins en attente" value={cheminsEnAttente} color="text-yellow-600" bg="bg-yellow-50" icon={<Clock size={16} />} loading={isLoading} />
+          <SummaryRow label="Chemins refuses" value={cheminsRefuses} color="text-red-500" bg="bg-red-50" icon={<XCircle size={16} />} loading={isLoading} />
+          <SummaryRow label="Etablissements" value={totalEtablissements} color="text-orange-500" bg="bg-orange-50" icon={<Building2 size={16} />} loading={isLoading} />
         </div>
 
       </div>
