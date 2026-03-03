@@ -12,20 +12,24 @@ const Dashboard = () => {
 
   useEffect(() => {
     refetchPaths();
-    if (!isEtablissement) refetchUsers();
+    refetchUsers();
   }, []);
 
-  // ✅ Stats communes
+  const isLoading = loadingPaths || loadingUsers;
+
+  // ✅ Stats Etablissement
+  const cheminsEtablissements = chemins?.filter((c) => c.author_role === "etablissement") || [];
+  const totalCheiminsEtab = cheminsEtablissements.length;
+  const cheminsApprouvesEtab = cheminsEtablissements.filter((c) => c.status === "published").length;
+  const cheminsRefusesEtab = cheminsEtablissements.filter((c) => c.status === "hidden").length;
+  const totalEtablissements = users?.filter((u) => u.role === "etablissement")?.length || 0;
+
+  // ✅ Stats Admin
   const totalChemins = chemins?.length || 0;
+  const totalUsers = users?.length || 0;
   const cheminsApprouves = chemins?.filter((c) => c.status === "published")?.length || 0;
   const cheminsRefuses = chemins?.filter((c) => c.status === "hidden")?.length || 0;
   const cheminsEnAttente = chemins?.filter((c) => c.status === "draft")?.length || 0;
-
-  // ✅ Stats admin uniquement
-  const totalUsers = users?.length || 0;
-  const totalEtablissements = users?.filter((u) => u.role === "etablissement")?.length || 0;
-
-  const isLoading = loadingPaths || (!isEtablissement && loadingUsers);
 
   // ✅ Dashboard Etablissement
   if (isEtablissement) {
@@ -42,32 +46,32 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <StatCard
-            label="Mes Chemins"
-            value={isLoading ? "..." : totalChemins}
+            label="Nombre d'Etablissements"
+            value={isLoading ? "..." : totalEtablissements}
+            icon={<Building2 size={24} />}
+            bgColor="bg-orange-100"
+            textColor="text-orange-600"
+          />
+          <StatCard
+            label="Chemins des Etablissements"
+            value={isLoading ? "..." : totalCheiminsEtab}
             icon={<Map size={24} />}
             bgColor="bg-blue-100"
             textColor="text-blue-600"
           />
           <StatCard
             label="Chemins Approuves"
-            value={isLoading ? "..." : cheminsApprouves}
+            value={isLoading ? "..." : cheminsApprouvesEtab}
             icon={<CheckCircle size={24} />}
             bgColor="bg-green-100"
             textColor="text-green-600"
           />
           <StatCard
             label="Chemins Refuses"
-            value={isLoading ? "..." : cheminsRefuses}
+            value={isLoading ? "..." : cheminsRefusesEtab}
             icon={<XCircle size={24} />}
             bgColor="bg-red-100"
             textColor="text-red-600"
-          />
-          <StatCard
-            label="En Attente"
-            value={isLoading ? "..." : cheminsEnAttente}
-            icon={<Clock size={24} />}
-            bgColor="bg-yellow-100"
-            textColor="text-yellow-600"
           />
         </div>
       </div>
