@@ -63,7 +63,7 @@ export const login = async (email, password) => {
 };
 
 // ===========================
-// PATHS
+// PATHS ADMIN
 // ===========================
 export const fetchPaths = async () => {
   const token = localStorage.getItem("access_token");
@@ -106,6 +106,31 @@ export const rejectPath = async (id) => {
 };
 
 // ===========================
+// PATHS ETABLISSEMENT
+// ===========================
+export const fetchEtablissementPaths = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await api.get("etablissement/paths/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const approveEtablissementPath = async (id) => {
+  const token = localStorage.getItem("access_token");
+  await api.post(`etablissement/paths/approve/${id}/`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const rejectEtablissementPath = async (id) => {
+  const token = localStorage.getItem("access_token");
+  await api.post(`etablissement/paths/reject/${id}/`, {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+// ===========================
 // USERS
 // ===========================
 export const fetchConnectedUsers = async () => {
@@ -123,7 +148,7 @@ export const deleteUser = async (id) => {
   });
 };
 
-// ✅ Toggle Admin - envoie explicitement role: "admin"
+// ✅ Toggle Admin
 export const toggleAdmin = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "admin" }, {
@@ -132,11 +157,29 @@ export const toggleAdmin = async (id) => {
   return response.data;
 };
 
-// ✅ Toggle Etablissement - envoie role: "etablissement"
+// ✅ Toggle Etablissement
 export const toggleEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "etablissement" }, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
+};
+
+// ===========================
+// ETABLISSEMENTS
+// ===========================
+export const fetchEtablissements = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await api.get("etablissements/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const deleteEtablissement = async (id) => {
+  const token = localStorage.getItem("access_token");
+  await api.delete(`etablissements/${id}/delete/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };
