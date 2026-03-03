@@ -175,7 +175,7 @@ export const fetchEtablissements = async () => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-};
+}; 
 
 export const deleteEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");

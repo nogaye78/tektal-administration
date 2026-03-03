@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Map, CheckCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, PlusCircle } from "lucide-react";
-import { usePathsList, usePathActions } from "../api/hooks";
-import { createPath } from "../api/apiService";
+import { useEtablissementPaths, useEtablissementPathActions } from "../api/hooks";
+import { createPath, fetchEtablissementProfile } from "../api/apiService";
 
 const STATUS_COLORS = {
   draft: "bg-yellow-100 text-yellow-600",
@@ -104,10 +104,11 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 };
 
 const MesChemins = () => {
-  const { data, loading, error, refetch } = usePathsList();
+  const { data, loading, error, refetch } = useEtablissementPaths();
   const chemins = data || [];
- const { approve, reject } = usePathActions(refetch);
+  const { approve, reject } = useEtablissementPathActions(refetch);
 
+  const [etablissement, setEtablissement] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedChemin, setSelectedChemin] = useState(null);
@@ -121,10 +122,10 @@ const MesChemins = () => {
     title: "",
     start_label: "",
     end_label: "",
-    start_lat: "",
-    start_lng: "",
     end_lat: "",
     end_lng: "",
+    start_lat: "",
+    start_lng: "",
     video_url: "",
     duration: 0,
     steps: [
@@ -132,6 +133,25 @@ const MesChemins = () => {
       { step_number: 2, start_time: 10, end_time: 20, text: "" },
     ],
   });
+
+  // ✅ Charge le profil établissement et pré-remplit la destination
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchEtablissementProfile();
+        setEtablissement(profile);
+        setFormData((prev) => ({
+          ...prev,
+          end_label: profile.name,
+          end_lat: profile.lat || "",
+          end_lng: profile.lng || "",
+        }));
+      } catch (err) {
+        console.error("Profil etablissement non trouve", err);
+      }
+    };
+    loadProfile();
+  }, []);
 
   const filteredChemins = chemins.filter((c) =>
     (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
@@ -202,9 +222,15 @@ const MesChemins = () => {
         steps: formData.steps,
       });
       setFormData({
-        title: "", start_label: "", end_label: "",
-        start_lat: "", start_lng: "", end_lat: "", end_lng: "",
-        video_url: "", duration: 0,
+        title: "",
+        start_label: "",
+        end_label: etablissement?.name || "",
+        end_lat: etablissement?.lat || "",
+        end_lng: etablissement?.lng || "",
+        start_lat: "",
+        start_lng: "",
+        video_url: "",
+        duration: 0,
         steps: [
           { step_number: 1, start_time: 0, end_time: 10, text: "" },
           { step_number: 2, start_time: 10, end_time: 20, text: "" },
@@ -223,8 +249,16 @@ const MesChemins = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Mon Etablissement</h1>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Mon Etablissement</h1>
+          {etablissement && (
+            <p className="text-sm text-gray-500 mt-1">
+              {etablissement.name}
+            </p>
+          )}
+        </div>
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
@@ -233,6 +267,7 @@ const MesChemins = () => {
         </button>
       </div>
 
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
@@ -254,6 +289,7 @@ const MesChemins = () => {
         </div>
       )}
 
+      {/* Liste chemins */}
       <div className="space-y-3">
         {filteredChemins.map((chemin) => (
           <div key={chemin.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -323,6 +359,7 @@ const MesChemins = () => {
         <CheminDetailModal chemin={selectedChemin} onClose={() => setSelectedChemin(null)} />
       )}
 
+      {/* Modal création */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 py-8 overflow-y-auto">
           <div className="bg-white p-6 rounded-2xl w-full max-w-2xl space-y-4 relative my-auto">
@@ -339,20 +376,30 @@ const MesChemins = () => {
                 className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                 required
               />
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="text" placeholder="Depart *"
+                {/* ✅ Départ - modifiable */}
+                <input
+                  type="text" placeholder="Depart *"
                   value={formData.start_label}
                   onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
                   className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                   required
                 />
-                <input type="text" placeholder="Arrivee *"
-                  value={formData.end_label}
-                  onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-                  required
-                />
+                {/* ✅ Arrivée - pré-rempli avec nom établissement, non modifiable */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.end_label}
+                    readOnly
+                    className="w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 text-gray-500 outline-none cursor-not-allowed"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                    Auto
+                  </span>
+                </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <input type="number" placeholder="Lat depart (optionnel)"
                   value={formData.start_lat}
@@ -362,16 +409,6 @@ const MesChemins = () => {
                 <input type="number" placeholder="Lng depart (optionnel)"
                   value={formData.start_lng}
                   onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-                <input type="number" placeholder="Lat arrivee (optionnel)"
-                  value={formData.end_lat}
-                  onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })}
-                  className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
-                />
-                <input type="number" placeholder="Lng arrivee (optionnel)"
-                  value={formData.end_lng}
-                  onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })}
                   className="border rounded-xl px-4 py-3 text-sm outline-none" step="any"
                 />
               </div>
@@ -421,14 +458,14 @@ const MesChemins = () => {
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
-                        type="number" placeholder="Debut (secondes)"
+                        type="number" placeholder="Debut (s)"
                         value={step.start_time}
                         onChange={(e) => updateStep(index, "start_time", e.target.value)}
                         className="border rounded-lg px-3 py-2 text-sm outline-none"
                         min="0" required
                       />
                       <input
-                        type="number" placeholder="Fin (secondes)"
+                        type="number" placeholder="Fin (s)"
                         value={step.end_time}
                         onChange={(e) => updateStep(index, "end_time", e.target.value)}
                         className="border rounded-lg px-3 py-2 text-sm outline-none"
