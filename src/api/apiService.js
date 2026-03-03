@@ -131,6 +131,17 @@ export const rejectEtablissementPath = async (id) => {
 };
 
 // ===========================
+// ETABLISSEMENT PROFILE
+// ===========================
+export const fetchEtablissementProfile = async () => {
+  const token = localStorage.getItem("access_token");
+  const response = await api.get("etablissement/profile/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+// ===========================
 // USERS
 // ===========================
 export const fetchConnectedUsers = async () => {
@@ -148,7 +159,6 @@ export const deleteUser = async (id) => {
   });
 };
 
-// ✅ Toggle Admin
 export const toggleAdmin = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "admin" }, {
@@ -157,7 +167,6 @@ export const toggleAdmin = async (id) => {
   return response.data;
 };
 
-// ✅ Toggle Etablissement
 export const toggleEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");
   const response = await api.post(`users/${id}/toggle-admin/`, { role: "etablissement" }, {
@@ -175,7 +184,7 @@ export const fetchEtablissements = async () => {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-}; 
+};
 
 export const deleteEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");

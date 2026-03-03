@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
-import { fetchPaths, approvePath, rejectPath, createPath, fetchConnectedUsers, deletePath } from "./apiService";
+import {
+  fetchPaths, approvePath, rejectPath, createPath,
+  fetchConnectedUsers, deletePath,
+  fetchEtablissementPaths, approveEtablissementPath, rejectEtablissementPath,
+} from "./apiService";
 
+// ===========================
+// PATHS ADMIN
+// ===========================
 export const usePathsList = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,10 +25,7 @@ export const usePathsList = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
+  useEffect(() => { load(); }, []);
   return { data, loading, error, refetch: load };
 };
 
@@ -66,6 +70,9 @@ export const useCreatePath = (refetch) => {
   return { create, loading, error };
 };
 
+// ===========================
+// USERS
+// ===========================
 export const useConnectedUsers = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,9 +90,44 @@ export const useConnectedUsers = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
+  useEffect(() => { load(); }, []);
   return { data, loading, error, refetch: load };
+};
+
+// ===========================
+// PATHS ETABLISSEMENT
+// ===========================
+export const useEtablissementPaths = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchEtablissementPaths();
+      const paths = response?.results || response || [];
+      setData(Array.isArray(paths) ? paths : []);
+    } catch (err) {
+      setError(err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+  return { data, loading, error, refetch: load };
+};
+
+export const useEtablissementPathActions = (refetch) => {
+  const approve = async (id) => {
+    try { await approveEtablissementPath(id); refetch(); }
+    catch (err) { console.error("Erreur approbation:", err); }
+  };
+
+  const reject = async (id) => {
+    try { await rejectEtablissementPath(id); refetch(); }
+    catch (err) { console.error("Erreur refus:", err); }
+  };
+
+  return { approve, reject };
 };
