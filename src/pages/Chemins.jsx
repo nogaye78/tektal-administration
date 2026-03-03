@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, Filter } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 
 const STATUS_COLORS = {
@@ -10,9 +10,9 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
-  draft: "Brouillon",
-  published: "Publie",
-  hidden: "Cache",
+  draft: "En attente",
+  published: "Approuve",
+  hidden: "Refuse",
   deleted: "Supprime",
 };
 
@@ -31,74 +31,60 @@ const uploadToCloudinary = async (file) => {
 
 const CheminDetailModal = ({ chemin, onClose }) => {
   if (!chemin) return null;
-
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 px-4 py-8">
-      <div className="bg-white rounded-2xl w-full max-w-lg relative flex flex-col max-h-[85vh]">
-
-        {/* ✅ Header fixe */}
+      <div className="bg-white rounded-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
         <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
-          <h2 className="text-lg font-bold text-slate-900">{chemin.title}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-black cursor-pointer transition p-1 rounded-lg hover:bg-gray-100"
-          >
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">{chemin.title}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{chemin.start_label} → {chemin.end_label}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-black cursor-pointer transition p-1 rounded-lg hover:bg-gray-100">
             <X size={20} />
           </button>
         </div>
 
-        {/* ✅ Contenu scrollable */}
         <div className="p-4 space-y-4 overflow-y-auto">
           {chemin.video_url && (
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">Video</h3>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Video</h3>
               <video src={chemin.video_url} controls className="w-full rounded-xl max-h-48 bg-black" />
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Depart</p>
-              <p className="font-semibold text-slate-800 text-sm">{chemin.start_label || "-"}</p>
-              {chemin.start_lat && (
-                <p className="text-xs text-gray-400 mt-1">{chemin.start_lat}, {chemin.start_lng}</p>
-              )}
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Arrivee</p>
-              <p className="font-semibold text-slate-800 text-sm">{chemin.end_label || "-"}</p>
-              {chemin.end_lat && (
-                <p className="text-xs text-gray-400 mt-1">{chemin.end_lat}, {chemin.end_lng}</p>
-              )}
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Auteur</p>
-              <p className="font-semibold text-slate-800 text-sm">{chemin.author || "-"}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Duree</p>
-              <p className="font-semibold text-slate-800 text-sm">{chemin.duration ? `${chemin.duration}s` : "-"}</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Statut</p>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
-                {STATUS_LABELS[chemin.status] || chemin.status}
-              </span>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-xs text-gray-400 mb-1">Officiel</p>
-              <p className="font-semibold text-slate-800 text-sm">{chemin.is_official ? "Oui" : "Non"}</p>
+          <div>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Informations</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Depart", value: chemin.start_label },
+                { label: "Arrivee", value: chemin.end_label },
+                { label: "Auteur", value: chemin.author },
+                { label: "Duree", value: chemin.duration ? `${chemin.duration}s` : "-" },
+                { label: "Officiel", value: chemin.is_official ? "Oui ✅" : "Non" },
+                {
+                  label: "Statut", value: (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
+                      {STATUS_LABELS[chemin.status] || chemin.status}
+                    </span>
+                  )
+                },
+              ].map((item, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">{item.label}</p>
+                  <p className="font-semibold text-slate-800 text-sm">{item.value || "-"}</p>
+                </div>
+              ))}
             </div>
           </div>
 
           {chemin.steps && chemin.steps.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                 Etapes ({chemin.steps.length})
               </h3>
               <div className="space-y-2">
                 {chemin.steps.map((step, index) => (
-                  <div key={index} className="border rounded-xl p-3 bg-gray-50 flex gap-3 items-start">
+                  <div key={index} className="border border-gray-100 rounded-xl p-3 bg-gray-50 flex gap-3 items-start">
                     <div className="w-6 h-6 rounded-full bg-[#FEBD00] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                       {step.step_number}
                     </div>
@@ -113,8 +99,8 @@ const CheminDetailModal = ({ chemin, onClose }) => {
           )}
 
           {chemin.created_at && (
-            <p className="text-xs text-gray-400 text-right">
-              Cree le : {new Date(chemin.created_at).toLocaleDateString("fr-FR")}
+            <p className="text-xs text-gray-400 text-right border-t pt-2">
+              Cree le {new Date(chemin.created_at).toLocaleDateString("fr-FR")}
             </p>
           )}
         </div>
@@ -130,6 +116,7 @@ const Chemins = () => {
   const { create, loading: creating } = useCreatePath(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [selectedChemin, setSelectedChemin] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -138,24 +125,27 @@ const Chemins = () => {
   const [expandedVideo, setExpandedVideo] = useState(null);
 
   const [formData, setFormData] = useState({
-    title: "",
-    start_label: "",
-    end_label: "",
-    start_lat: "",
-    start_lng: "",
-    end_lat: "",
-    end_lng: "",
-    video_url: "",
-    duration: 0,
+    title: "", start_label: "", end_label: "",
+    start_lat: "", start_lng: "", end_lat: "", end_lng: "",
+    video_url: "", duration: 0,
     steps: [
       { step_number: 1, start_time: 0, end_time: 10, text: "" },
       { step_number: 2, start_time: 10, end_time: 20, text: "" },
     ],
   });
 
-  const filteredChemins = chemins.filter((c) =>
-    (c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredChemins = chemins.filter((c) => {
+    const matchSearch = (c.title || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = filterStatus === "all" || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const counts = {
+    all: chemins.length,
+    draft: chemins.filter((c) => c.status === "draft").length,
+    published: chemins.filter((c) => c.status === "published").length,
+    hidden: chemins.filter((c) => c.status === "hidden").length,
+  };
 
   const handleVideoChange = async (e) => {
     const file = e.target.files[0];
@@ -177,47 +167,30 @@ const Chemins = () => {
     if (formData.steps.length >= 6) return;
     setFormData((prev) => ({
       ...prev,
-      steps: [
-        ...prev.steps,
-        { step_number: prev.steps.length + 1, start_time: 0, end_time: 10, text: "" },
-      ],
+      steps: [...prev.steps, { step_number: prev.steps.length + 1, start_time: 0, end_time: 10, text: "" }],
     }));
   };
 
   const removeStep = (index) => {
     if (formData.steps.length <= 2) return;
-    const newSteps = formData.steps
-      .filter((_, i) => i !== index)
-      .map((s, i) => ({ ...s, step_number: i + 1 }));
+    const newSteps = formData.steps.filter((_, i) => i !== index).map((s, i) => ({ ...s, step_number: i + 1 }));
     setFormData((prev) => ({ ...prev, steps: newSteps }));
   };
 
   const updateStep = (index, field, value) => {
     const newSteps = [...formData.steps];
-    newSteps[index] = {
-      ...newSteps[index],
-      [field]: field.includes("time") ? parseInt(value) || 0 : value,
-    };
+    newSteps[index] = { ...newSteps[index], [field]: field.includes("time") ? parseInt(value) || 0 : value };
     setFormData((prev) => ({ ...prev, steps: newSteps }));
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!formData.video_url) {
-      setUploadError("Veuillez uploader une video.");
-      return;
-    }
+    if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
     await create({
-      title: formData.title,
-      start_label: formData.start_label,
-      end_label: formData.end_label,
-      start_lat: formData.start_lat || null,
-      start_lng: formData.start_lng || null,
-      end_lat: formData.end_lat || null,
-      end_lng: formData.end_lng || null,
-      video_url: formData.video_url,
-      duration: formData.duration,
-      steps: formData.steps,
+      title: formData.title, start_label: formData.start_label, end_label: formData.end_label,
+      start_lat: formData.start_lat || null, start_lng: formData.start_lng || null,
+      end_lat: formData.end_lat || null, end_lng: formData.end_lng || null,
+      video_url: formData.video_url, duration: formData.duration, steps: formData.steps,
     });
     setFormData({
       title: "", start_label: "", end_label: "",
@@ -235,95 +208,145 @@ const Chemins = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Gestion des Chemins</h1>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Gestion des Chemins</h1>
+          <p className="text-sm text-gray-400 mt-1">{chemins.length} chemin{chemins.length > 1 ? "s" : ""} au total</p>
+        </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2 rounded-xl transition cursor-pointer w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer w-full sm:w-auto shadow-sm"
         >
           <PlusCircle size={18} /> Creer un parcours
         </button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Rechercher un chemin..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm"
-        />
+      {/* Filtres + Search */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Rechercher un chemin..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm bg-white"
+          />
+        </div>
+
+        {/* Tabs filtres */}
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: "all", label: "Tous", color: "bg-slate-100 text-slate-600" },
+            { key: "draft", label: "En attente", color: "bg-yellow-100 text-yellow-600" },
+            { key: "published", label: "Approuves", color: "bg-green-100 text-green-600" },
+            { key: "hidden", label: "Refuses", color: "bg-gray-100 text-gray-600" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilterStatus(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                filterStatus === tab.key
+                  ? `${tab.color} ring-2 ring-offset-1 ring-current`
+                  : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              {tab.label}
+              <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${filterStatus === tab.key ? "bg-white/60" : "bg-gray-100"}`}>
+                {counts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      {loading && <p className="text-gray-500 text-center">Chargement...</p>}
-      {error && <p className="text-red-500 text-center text-sm">Erreur</p>}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="animate-spin text-[#FEBD00]" size={32} />
+        </div>
+      )}
+      {error && <p className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-xl">Erreur de chargement</p>}
 
       {!loading && filteredChemins.length === 0 && (
-        <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-400">
-          <Map className="mx-auto mb-2 opacity-10" size={48} />
-          <p>Aucun chemin trouve.</p>
+        <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center text-gray-400">
+          <Map className="mx-auto mb-3 opacity-10" size={48} />
+          <p className="font-medium">Aucun chemin trouve</p>
+          <p className="text-xs mt-1">Essayez de modifier vos filtres</p>
         </div>
       )}
 
+      {/* Liste */}
       <div className="space-y-3">
         {filteredChemins.map((chemin) => (
-          <div key={chemin.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div key={chemin.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
             <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <div className="space-y-1">
-                <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
-                <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
-                <p className="text-xs text-gray-400">Auteur : {chemin.author}</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
-                    {STATUS_LABELS[chemin.status] || chemin.status}
-                  </span>
-                  {chemin.steps && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                      {chemin.steps.length} etape{chemin.steps.length > 1 ? "s" : ""}
+              <div className="flex items-start gap-3">
+                {/* Icône statut */}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-500"}`}>
+                  <Map size={18} />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">{chemin.title}</h3>
+                  <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
+                  <p className="text-xs text-gray-400">Par <span className="font-medium text-slate-600">{chemin.author}</span></p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
+                      {STATUS_LABELS[chemin.status] || chemin.status}
                     </span>
-                  )}
+                    {chemin.steps && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 font-medium">
+                        {chemin.steps.length} etape{chemin.steps.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {chemin.duration && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 font-medium">
+                        {chemin.duration}s
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-2 self-end sm:self-auto items-center flex-wrap">
+              <div className="flex gap-2 self-end sm:self-auto items-center flex-shrink-0 flex-wrap">
                 <button
                   onClick={() => setSelectedChemin(chemin)}
-                  className="flex items-center gap-1 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition cursor-pointer"
                 >
-                  <Eye size={14} /> Detail
+                  <Eye size={13} /> Detail
                 </button>
 
                 {chemin.video_url && (
                   <button
                     onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
-                    className="flex items-center gap-1 text-xs text-blue-500 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition cursor-pointer"
+                    className="flex items-center gap-1.5 text-xs text-blue-500 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition cursor-pointer"
                   >
-                    <Video size={14} />
-                    {expandedVideo === chemin.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    <Video size={13} />
+                    {expandedVideo === chemin.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                   </button>
                 )}
 
                 <button
                   onClick={() => approve(chemin.id)}
-                  className="text-green-500 hover:text-green-600 transition cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 text-green-500 hover:bg-green-100 transition cursor-pointer"
                   title="Approuver"
                 >
-                  <CheckCircle size={22} />
+                  <CheckCircle size={18} />
                 </button>
 
                 <button
                   onClick={() => reject(chemin.id)}
-                  className="text-orange-400 hover:text-orange-500 transition cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-400 hover:bg-orange-100 transition cursor-pointer"
                   title="Refuser"
                 >
-                  <X size={22} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
 
             {expandedVideo === chemin.id && chemin.video_url && (
-              <div className="px-4 pb-4">
+              <div className="px-4 pb-4 border-t border-gray-50 pt-3">
                 <video src={chemin.video_url} controls className="w-full rounded-xl max-h-56 bg-black" />
               </div>
             )}
@@ -332,220 +355,134 @@ const Chemins = () => {
       </div>
 
       {selectedChemin && (
-        <CheminDetailModal
-          chemin={selectedChemin}
-          onClose={() => setSelectedChemin(null)}
-        />
+        <CheminDetailModal chemin={selectedChemin} onClose={() => setSelectedChemin(null)} />
       )}
 
-     {showModal && (
-  <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 overflow-y-auto py-8">
-    
-    {/* ✅ Modal plus petit */}
-    <div className="bg-white rounded-2xl w-full max-w-xl relative flex flex-col max-h-[90vh]">
-
-      {/* ✅ Header avec croix en haut */}
-      <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
-        <h2 className="text-lg font-bold text-slate-900">Nouveau Parcours</h2>
-        <button
-          onClick={() => setShowModal(false)}
-          className="text-gray-400 hover:text-black cursor-pointer transition p-1 rounded-lg hover:bg-gray-100"
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      {/* ✅ Contenu scrollable */}
-      <div className="p-5 space-y-4 overflow-y-auto">
-
-        <form onSubmit={handleCreate} className="space-y-4">
-
-          <input
-            type="text"
-            placeholder="Titre du parcours"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-            required
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="Depart (ex: Dakar)"
-              value={formData.start_label}
-              onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Arrivee (ex: Paris)"
-              value={formData.end_label}
-              onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="number"
-              placeholder="Lat depart (optionnel)"
-              value={formData.start_lat}
-              onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm outline-none"
-              step="any"
-            />
-            <input
-              type="number"
-              placeholder="Lng depart (optionnel)"
-              value={formData.start_lng}
-              onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm outline-none"
-              step="any"
-            />
-            <input
-              type="number"
-              placeholder="Lat arrivee (optionnel)"
-              value={formData.end_lat}
-              onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm outline-none"
-              step="any"
-            />
-            <input
-              type="number"
-              placeholder="Lng arrivee (optionnel)"
-              value={formData.end_lng}
-              onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })}
-              className="border rounded-xl px-4 py-3 text-sm outline-none"
-              step="any"
-            />
-          </div>
-
-          <label className="w-full border-2 border-dashed border-gray-300 rounded-xl px-4 py-4 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] transition">
-            {uploading ? (
-              <Loader2 size={24} className="animate-spin text-[#FEBD00]" />
-            ) : (
-              <Video size={24} className="text-gray-400 mb-2" />
-            )}
-            <span className="text-sm text-gray-500 mt-1">
-              {uploading ? "Upload en cours..." : videoName ? videoName : "Choisir une video"}
-            </span>
-            {formData.video_url && (
-              <span className="text-xs text-green-500 mt-1">Video uploadee ✅</span>
-            )}
-            {formData.duration > 0 && (
-              <span className="text-xs text-gray-400">Duree: {formData.duration}s</span>
-            )}
-            {uploadError && (
-              <span className="text-xs text-red-500 mt-1">{uploadError}</span>
-            )}
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={handleVideoChange}
-            />
-          </label>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-sm">
-                Etapes ({formData.steps.length}/6)
-              </h3>
-              {formData.steps.length < 6 && (
-                <button
-                  type="button"
-                  onClick={addStep}
-                  className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold cursor-pointer"
-                >
-                  <Plus size={14} /> Ajouter etape
-                </button>
-              )}
+      {/* Modal création */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 px-4 overflow-y-auto py-8">
+          <div className="bg-white rounded-2xl w-full max-w-xl flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b flex-shrink-0">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Nouveau Parcours</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Remplissez les informations du chemin</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-black cursor-pointer transition p-1.5 rounded-lg hover:bg-gray-100">
+                <X size={20} />
+              </button>
             </div>
 
-            {formData.steps.map((step, index) => (
-              <div
-                key={index}
-                className="border rounded-xl p-3 space-y-2 bg-gray-50"
-              >
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-gray-600">
-                    Etape {step.step_number}
-                  </span>
-                  {formData.steps.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeStep(index)}
-                      className="text-red-400 text-xs cursor-pointer"
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </div>
+            <div className="p-5 space-y-4 overflow-y-auto">
+              <form onSubmit={handleCreate} className="space-y-4">
 
-                <input
-                  type="text"
-                  placeholder="Description de l'etape"
-                  value={step.text}
-                  onChange={(e) =>
-                    updateStep(index, "text", e.target.value)
-                  }
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#FEBD00]"
-                  required
-                />
-
-                <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Titre</label>
                   <input
-                    type="number"
-                    placeholder="Debut (secondes)"
-                    value={step.start_time}
-                    onChange={(e) =>
-                      updateStep(index, "start_time", e.target.value)
-                    }
-                    className="border rounded-lg px-3 py-2 text-sm outline-none"
-                    min="0"
-                    required
-                  />
-                  <input
-                    type="number"
-                    placeholder="Fin (secondes)"
-                    value={step.end_time}
-                    onChange={(e) =>
-                      updateStep(index, "end_time", e.target.value)
-                    }
-                    className="border rounded-lg px-3 py-2 text-sm outline-none"
-                    min="1"
+                    type="text" placeholder="Ex: Chemin vers la plage"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                     required
                   />
                 </div>
-              </div>
-            ))}
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Trajet</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" placeholder="Depart"
+                      value={formData.start_label}
+                      onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
+                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+                      required
+                    />
+                    <input type="text" placeholder="Arrivee"
+                      value={formData.end_label}
+                      onChange={(e) => setFormData({ ...formData, end_label: e.target.value })}
+                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Coordonnees GPS (optionnel)</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="number" placeholder="Lat depart" value={formData.start_lat} onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                    <input type="number" placeholder="Lng depart" value={formData.start_lng} onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                    <input type="number" placeholder="Lat arrivee" value={formData.end_lat} onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                    <input type="number" placeholder="Lng arrivee" value={formData.end_lng} onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Video</label>
+                  <label className="w-full border-2 border-dashed border-gray-200 rounded-xl px-4 py-5 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] hover:bg-yellow-50/30 transition">
+                    {uploading ? <Loader2 size={24} className="animate-spin text-[#FEBD00]" /> : <Video size={24} className="text-gray-300 mb-2" />}
+                    <span className="text-sm text-gray-400 mt-1 font-medium">
+                      {uploading ? "Upload en cours..." : videoName || "Cliquer pour choisir une video"}
+                    </span>
+                    {formData.video_url && <span className="text-xs text-green-500 mt-1 font-semibold">Video uploadee ✅</span>}
+                    {formData.duration > 0 && <span className="text-xs text-gray-400 mt-0.5">Duree : {formData.duration}s</span>}
+                    {uploadError && <span className="text-xs text-red-500 mt-1">{uploadError}</span>}
+                    <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
+                  </label>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Etapes ({formData.steps.length}/6)</label>
+                    {formData.steps.length < 6 && (
+                      <button type="button" onClick={addStep} className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold cursor-pointer hover:text-yellow-500 transition">
+                        <Plus size={14} /> Ajouter
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {formData.steps.map((step, index) => (
+                      <div key={index} className="border border-gray-100 rounded-xl p-3 space-y-2 bg-gray-50/50">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-[#FEBD00] text-black text-xs font-bold flex items-center justify-center">
+                              {step.step_number}
+                            </div>
+                            <span className="text-xs font-semibold text-gray-500">Etape {step.step_number}</span>
+                          </div>
+                          {formData.steps.length > 2 && (
+                            <button type="button" onClick={() => removeStep(index)} className="text-red-400 text-xs cursor-pointer hover:text-red-600 transition">
+                              Supprimer
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="text" placeholder="Description de l'etape"
+                          value={step.text}
+                          onChange={(e) => updateStep(index, "text", e.target.value)}
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#FEBD00] bg-white"
+                          required
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="number" placeholder="Debut (s)" value={step.start_time} onChange={(e) => updateStep(index, "start_time", e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white" min="0" required />
+                          <input type="number" placeholder="Fin (s)" value={step.end_time} onChange={(e) => updateStep(index, "end_time", e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none bg-white" min="1" required />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={creating || uploading}
+                  className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                >
+                  {creating ? <><Loader2 size={18} className="animate-spin" /> Creation...</> : "Creer le parcours"}
+                </button>
+              </form>
+            </div>
           </div>
-
-          <button
-            type="submit"
-            disabled={creating || uploading}
-            className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-pointer"
-          >
-            {creating ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Creation...
-              </>
-            ) : (
-              "Creer le parcours"
-            )}
-          </button>
-
-        </form>
-      </div>
-    </div>
-  </div>
-)}
+        </div>
+      )}
     </div>
   );
 };
 
-export default Chemins ;
+export default Chemins;
