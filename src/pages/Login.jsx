@@ -19,11 +19,9 @@ const Login = () => {
     try {
       const { user } = await login(email, password);
 
-      // ✅ Redirection selon le rôle
-      if (user.role === "admin") {
+      // ✅ Admin et etablissement redirigent vers /dashboard
+      if (user.role === "admin" || user.role === "etablissement") {
         navigate("/dashboard");
-      } else if (user.role === "etablissement") {
-        navigate("/mes-chemins");
       } else {
         setError("Acces non autorise.");
         localStorage.clear();
@@ -80,7 +78,7 @@ const Login = () => {
           />
           <button
             type="button"
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -90,9 +88,9 @@ const Login = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center disabled:opacity-50"
+          className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center disabled:opacity-50 cursor-pointer"
         >
-          {loading ? "⏳ Connexion..." : "Connexion"}
+          {loading ? "Connexion..." : "Connexion"}
         </button>
       </form>
     </div>

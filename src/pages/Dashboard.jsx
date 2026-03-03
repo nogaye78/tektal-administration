@@ -37,7 +37,7 @@ const Dashboard = () => {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Bonjour, {user.username || "Etablissement"} 👋
+            Bonjour, {user.username || "Etablissement"}
           </h1>
           <p className="text-gray-500 text-sm sm:text-base">
             Apercu de votre espace etablissement
