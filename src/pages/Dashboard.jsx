@@ -147,7 +147,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-400 font-medium">Bienvenue 👋</p>
+          <p className="text-sm text-gray-400 font-medium">Bienvenue</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-0.5">Dashboard</h1>
           <p className="text-gray-400 text-sm mt-1">Apercu global de la plateforme Tektal</p>
         </div>
