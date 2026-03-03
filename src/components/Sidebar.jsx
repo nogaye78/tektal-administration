@@ -13,7 +13,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   }, []);
 
-  // ✅ Menu selon le rôle
+  // ✅ Menu Admin
   const adminMenu = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Chemins", path: "/chemins", icon: <Route size={20} /> },
@@ -21,8 +21,10 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: "Etablissements", path: "/etablissements", icon: <Building2 size={20} /> },
   ];
 
+  // ✅ Menu Etablissement - seulement 2 menus
   const etablissementMenu = [
-    { name: "Mes Chemins", path: "/mes-chemins", icon: <Route size={20} /> },
+    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
+    { name: "Etablissement", path: "/mes-chemins", icon: <Building2 size={20} /> },
   ];
 
   const menuItems = user.role === "etablissement" ? etablissementMenu : adminMenu;
@@ -66,7 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               end={item.path === "/dashboard"}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
                   isActive
                     ? "bg-[#FEBD00] text-black font-bold shadow-md"
                     : "text-gray-600 hover:bg-gray-50"
@@ -81,18 +83,20 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         <div className="p-4 border-t border-gray-100 flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#FEBD00] text-white flex items-center justify-center font-bold">
-              {user.name ? user.name.charAt(0).toUpperCase() : user.role === "etablissement" ? "E" : "A"}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+              user.role === "etablissement" ? "bg-blue-100 text-blue-600" : "bg-[#FEBD00] text-white"
+            }`}>
+              {user.username ? user.username.charAt(0).toUpperCase() : user.role === "etablissement" ? "E" : "A"}
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-slate-900 truncate">
-                {user.name || (user.role === "etablissement" ? "Etablissement" : "Admin")}
+                {user.username || (user.role === "etablissement" ? "Etablissement" : "Admin")}
               </p>
-              <p className="text-xs text-gray-500 truncate">
-                {user.email || ""}
-              </p>
+              <p className="text-xs text-gray-500 truncate">{user.email || ""}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                user.role === "admin" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
+                user.role === "admin"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-blue-100 text-blue-700"
               }`}>
                 {user.role === "admin" ? "Admin" : "Etablissement"}
               </span>
@@ -101,7 +105,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors w-full"
+            className="flex items-center gap-3 px-4 py-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors w-full cursor-pointer"
           >
             <LogOut size={20} />
             <span className="text-sm font-medium">Deconnexion</span>
