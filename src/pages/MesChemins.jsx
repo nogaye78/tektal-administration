@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Map, CheckCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, PlusCircle } from "lucide-react";
-import { useEtablissementPaths, useEtablissementPathActions } from "../api/hooks";
+import { usePathsList, usePathActions } from "../api/hooks";
 import { createPath } from "../api/apiService";
 
 const STATUS_COLORS = {
@@ -104,9 +104,9 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 };
 
 const MesChemins = () => {
-  const { data, loading, error, refetch } = useEtablissementPaths();
+  const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
-  const { approve, reject } = useEtablissementPathActions(refetch);
+ const { approve, reject } = usePathActions(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
