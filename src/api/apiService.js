@@ -2,14 +2,21 @@ import axios from "axios";
 
 const BASE_URL = "https://tektal-backend.onrender.com";
 
+// ===========================
+// INSTANCES AXIOS
+// ===========================
+
+// Pour toutes les requêtes liées à l'admin-panel
 const api = axios.create({
   baseURL: `${BASE_URL}/admin-panel/api/`,
 });
 
+// Pour toutes les requêtes liées à l'API publique (paths, auth)
 const pathsApi = axios.create({
   baseURL: `${BASE_URL}/api/`,
 });
 
+// Interceptor pour gérer le refresh token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -174,6 +181,7 @@ export const toggleEtablissement = async (id) => {
   });
   return response.data;
 };
+
 // ===========================
 // ETABLISSEMENTS
 // ===========================
