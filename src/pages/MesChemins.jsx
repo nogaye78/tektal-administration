@@ -206,31 +206,36 @@ const MesChemins = () => {
   };
 
   const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
-    setCreating(true);
-    try {
-      await createPath({
-        title: formData.title,
-        start_label: formData.start_label,
-        end_label: formData.end_label,
-        start_lat: formData.start_lat || null,
-        start_lng: formData.start_lng || null,
-        end_lat: formData.end_lat || null,
-        end_lng: formData.end_lng || null,
-        video_url: formData.video_url,
-        duration: formData.duration,
-        steps: formData.steps,
-      });
-      resetForm();
-      setShowModal(false);
-      refetch();
-    } catch (err) {
-      setUploadError(err.message || "Erreur lors de la creation.");
-    } finally {
-      setCreating(false);
-    }
-  };
+  e.preventDefault();
+  if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
+  setCreating(true);
+  try {
+    await createPath({
+      title: formData.title,
+      start_label: formData.start_label,
+      end_label: formData.end_label,
+      start_lat: formData.start_lat ? parseFloat(formData.start_lat) : null,
+      start_lng: formData.start_lng ? parseFloat(formData.start_lng) : null,
+      end_lat: formData.end_lat ? parseFloat(formData.end_lat) : null,
+      end_lng: formData.end_lng ? parseFloat(formData.end_lng) : null,
+      video_url: formData.video_url,
+      duration: formData.duration,
+      steps: formData.steps.map(s => ({
+        step_number: s.step_number,
+        text: s.text,
+        start_time: parseInt(s.start_time) || 0,
+        end_time: parseInt(s.end_time) || 10,
+      })),
+    });
+    resetForm();
+    setShowModal(false);
+    refetch();
+  } catch (err) {
+    setUploadError(err.message || "Erreur lors de la creation.");
+  } finally {
+    setCreating(false);
+  }
+};
 
   return (
     <div className="space-y-6">
