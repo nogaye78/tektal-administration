@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
+import { fetchEtablissements } from "../api/apiService";
 
 const STATUS_COLORS = {
   draft: "bg-yellow-100 text-yellow-600",
@@ -114,6 +115,7 @@ const Chemins = () => {
   const [uploadError, setUploadError] = useState("");
   const [videoName, setVideoName] = useState("");
   const [expandedVideo, setExpandedVideo] = useState(null);
+  const [etablissements, setEtablissements] = useState([]);
 
   const [formData, setFormData] = useState({
     title: "", start_label: "", end_label: "",
@@ -124,6 +126,20 @@ const Chemins = () => {
       { step_number: 2, start_time: 10, end_time: 20, text: "" },
     ],
   });
+
+  // ✅ Charger les établissements
+  useEffect(() => {
+    const loadEtablissements = async () => {
+      try {
+        const data = await fetchEtablissements();
+        const list = data?.results || data || [];
+        setEtablissements(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error("Erreur chargement etablissements:", err);
+      }
+    };
+    loadEtablissements();
+  }, []);
 
   const filteredChemins = chemins.filter((c) => {
     const matchSearch = (c.title || "").toLowerCase().includes(searchTerm.toLowerCase());
@@ -171,12 +187,26 @@ const Chemins = () => {
     e.preventDefault();
     if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
     await create({
-      title: formData.title, start_label: formData.start_label, end_label: formData.end_label,
-      start_lat: formData.start_lat || null, start_lng: formData.start_lng || null,
-      end_lat: formData.end_lat || null, end_lng: formData.end_lng || null,
-      video_url: formData.video_url, duration: formData.duration, steps: formData.steps,
+      title: formData.title,
+      start_label: formData.start_label,
+      end_label: formData.end_label,
+      start_lat: formData.start_lat || null,
+      start_lng: formData.start_lng || null,
+      end_lat: formData.end_lat || null,
+      end_lng: formData.end_lng || null,
+      video_url: formData.video_url,
+      duration: formData.duration,
+      steps: formData.steps,
     });
-    setFormData({ title: "", start_label: "", end_label: "", start_lat: "", start_lng: "", end_lat: "", end_lng: "", video_url: "", duration: 0, steps: [{ step_number: 1, start_time: 0, end_time: 10, text: "" }, { step_number: 2, start_time: 10, end_time: 20, text: "" }] });
+    setFormData({
+      title: "", start_label: "", end_label: "",
+      start_lat: "", start_lng: "", end_lat: "", end_lng: "",
+      video_url: "", duration: 0,
+      steps: [
+        { step_number: 1, start_time: 0, end_time: 10, text: "" },
+        { step_number: 2, start_time: 10, end_time: 20, text: "" },
+      ],
+    });
     setVideoName(""); setUploadError(""); setShowModal(false);
   };
 
@@ -372,6 +402,7 @@ const Chemins = () => {
             <div className="p-5 overflow-y-auto">
               <form onSubmit={handleCreate} className="space-y-4">
 
+                {/* Titre */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Titre *</label>
                   <input type="text" placeholder="Ex: Chemin vers la plage"
@@ -380,24 +411,64 @@ const Chemins = () => {
                   />
                 </div>
 
+                {/* Trajet */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Trajet *</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="text" placeholder="Depart" value={formData.start_label} onChange={(e) => setFormData({ ...formData, start_label: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none" required />
-                    <input type="text" placeholder="Arrivee" value={formData.end_label} onChange={(e) => setFormData({ ...formData, end_label: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none" required />
+                    {/* Départ */}
+                    <input
+                      type="text" placeholder="Depart"
+                      value={formData.start_label}
+                      onChange={(e) => setFormData({ ...formData, start_label: e.target.value })}
+                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
+                      required
+                    />
+                    {/* ✅ Destination = sélection établissement */}
+                    <select
+                      value={formData.end_label}
+                      onChange={(e) => {
+                        const selected = etablissements.find(et => et.name === e.target.value);
+                        setFormData({
+                          ...formData,
+                          end_label: e.target.value,
+                          end_lat: selected?.lat || "",
+                          end_lng: selected?.lng || "",
+                        });
+                      }}
+                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none bg-white"
+                      required
+                    >
+                      <option value="">Choisir un etablissement</option>
+                      {etablissements.map((et) => (
+                        <option key={et.id} value={et.name}>
+                          {et.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
+                  {/* ✅ Aperçu établissement sélectionné */}
+                  {formData.end_label && (
+                    <div className="mt-2 flex items-center gap-2 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl px-3 py-2">
+                      <Map size={14} className="text-[#FEBD00] flex-shrink-0" />
+                      <span className="text-xs font-semibold text-yellow-700">Destination : {formData.end_label}</span>
+                      {formData.end_lat && (
+                        <span className="text-xs text-gray-400 ml-auto">{formData.end_lat}, {formData.end_lng}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
+                {/* GPS départ */}
                 <div>
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">GPS (optionnel)</label>
+                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">GPS depart (optionnel)</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="number" placeholder="Lat depart" value={formData.start_lat} onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
-                    <input type="number" placeholder="Lng depart" value={formData.start_lng} onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
-                    <input type="number" placeholder="Lat arrivee" value={formData.end_lat} onChange={(e) => setFormData({ ...formData, end_lat: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
-                    <input type="number" placeholder="Lng arrivee" value={formData.end_lng} onChange={(e) => setFormData({ ...formData, end_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                    <input type="number" placeholder="Latitude" value={formData.start_lat} onChange={(e) => setFormData({ ...formData, start_lat: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
+                    <input type="number" placeholder="Longitude" value={formData.start_lng} onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
                   </div>
                 </div>
 
+                {/* Video */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Video *</label>
                   <label className="w-full border-2 border-dashed border-gray-200 rounded-xl px-4 py-5 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] hover:bg-[#FEBD00]/5 transition">
@@ -412,11 +483,12 @@ const Chemins = () => {
                   </label>
                 </div>
 
+                {/* Etapes */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Etapes ({formData.steps.length}/6)</label>
                     {formData.steps.length < 6 && (
-                      <button type="button" onClick={addStep} className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold cursor-pointer hover:text-yellow-600 transition">
+                      <button type="button" onClick={addStep} className="flex items-center gap-1 text-xs text-[#FEBD00] font-semibold cursor-pointer hover:text-yellow-600">
                         <Plus size={14} /> Ajouter
                       </button>
                     )}
