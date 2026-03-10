@@ -56,7 +56,7 @@ const CheminDetailModal = ({ chemin, onClose }) => {
                 { label: "Arrivee", value: chemin.end_label },
                 { label: "Auteur", value: chemin.author },
                 { label: "Duree", value: chemin.duration ? `${chemin.duration}s` : "-" },
-                { label: "Officiel", value: chemin.is_official ? "Oui ✅" : "Non" },
+                { label: "Officiel", value: chemin.is_official ? "Oui" : "Non" },
                 {
                   label: "Statut", value: (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
