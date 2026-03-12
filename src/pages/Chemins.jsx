@@ -117,8 +117,10 @@ const Chemins = () => {
   const [expandedVideo, setExpandedVideo] = useState(null);
   const [etablissements, setEtablissements] = useState([]);
 
+  // ✅ establishment_id ajouté dans le state
   const [formData, setFormData] = useState({
     title: "", start_label: "", end_label: "",
+    establishment_id: null,
     start_lat: "", start_lng: "", end_lat: "", end_lng: "",
     video_url: "", duration: 0,
     steps: [
@@ -127,7 +129,6 @@ const Chemins = () => {
     ],
   });
 
-  // ✅ Charger les établissements
   useEffect(() => {
     const loadEtablissements = async () => {
       try {
@@ -183,13 +184,17 @@ const Chemins = () => {
     setFormData((prev) => ({ ...prev, steps: newSteps }));
   };
 
+  // ✅ handleCreate corrigé avec establishment_id
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
+    if (!formData.establishment_id) { setUploadError("Veuillez choisir un etablissement."); return; }
+
     await create({
       title: formData.title,
       start_label: formData.start_label,
       end_label: formData.end_label,
+      establishment_id: formData.establishment_id,
       start_lat: formData.start_lat || null,
       start_lng: formData.start_lng || null,
       end_lat: formData.end_lat || null,
@@ -198,8 +203,10 @@ const Chemins = () => {
       duration: formData.duration,
       steps: formData.steps,
     });
+
     setFormData({
       title: "", start_label: "", end_label: "",
+      establishment_id: null,
       start_lat: "", start_lng: "", end_lat: "", end_lng: "",
       video_url: "", duration: 0,
       steps: [
@@ -207,7 +214,9 @@ const Chemins = () => {
         { step_number: 2, start_time: 10, end_time: 20, text: "" },
       ],
     });
-    setVideoName(""); setUploadError(""); setShowModal(false);
+    setVideoName("");
+    setUploadError("");
+    setShowModal(false);
   };
 
   const tabs = [
@@ -415,7 +424,6 @@ const Chemins = () => {
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Trajet *</label>
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Départ */}
                     <input
                       type="text" placeholder="Depart"
                       value={formData.start_label}
@@ -423,7 +431,7 @@ const Chemins = () => {
                       className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                       required
                     />
-                    {/* ✅ Destination = sélection établissement */}
+                    {/* ✅ Select établissement avec establishment_id */}
                     <select
                       value={formData.end_label}
                       onChange={(e) => {
@@ -431,6 +439,7 @@ const Chemins = () => {
                         setFormData({
                           ...formData,
                           end_label: e.target.value,
+                          establishment_id: selected?.id || null, // ✅ stocke l'id
                           end_lat: selected?.lat || "",
                           end_lng: selected?.lng || "",
                         });
@@ -447,7 +456,6 @@ const Chemins = () => {
                     </select>
                   </div>
 
-                  {/* ✅ Aperçu établissement sélectionné */}
                   {formData.end_label && (
                     <div className="mt-2 flex items-center gap-2 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl px-3 py-2">
                       <Map size={14} className="text-[#FEBD00] flex-shrink-0" />
