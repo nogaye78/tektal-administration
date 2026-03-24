@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, CheckCircle } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
 import { deleteUser, toggleAdmin, toggleEtablissement } from "../api/apiService";
 
@@ -9,12 +9,30 @@ const ROLE_CONFIG = {
   participant: { label: "Participant", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
 };
 
+// ✅ Composant Toast
+const Toast = ({ message, onClose }) => (
+  <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl animate-fade-in">
+    <CheckCircle size={18} className="text-[#FEBD00] flex-shrink-0" />
+    <p className="text-sm font-medium">{message}</p>
+    <button onClick={onClose} className="text-gray-400 hover:text-white ml-1">
+      <X size={15} />
+    </button>
+  </div>
+);
+
 const Utilisateurs = () => {
   const { data: users, loading, error, refetch } = useConnectedUsers();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState(null); // ✅ state toast
+
+  // ✅ Afficher un toast pendant 3 secondes
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -22,10 +40,22 @@ const Utilisateurs = () => {
     setUserToDelete(null);
     setDeleting(false);
     refetch();
+    showToast("Utilisateur supprime avec succes");
   };
 
-  const handleToggleAdmin = async (id) => { await toggleAdmin(id); refetch(); };
-  const handleToggleEtablissement = async (id) => { await toggleEtablissement(id); refetch(); };
+  const handleToggleAdmin = async (user) => {
+    await toggleAdmin(user.id);
+    refetch();
+    const newRole = user.role === "admin" ? "participant" : "admin";
+    showToast(`${user.username} est maintenant ${newRole === "admin" ? "Admin" : "Participant"}`);
+  };
+
+  const handleToggleEtablissement = async (user) => {
+    await toggleEtablissement(user.id);
+    refetch();
+    const newRole = user.role === "etablissement" ? "participant" : "etablissement";
+    showToast(`${user.username} est maintenant ${newRole === "etablissement" ? "Etablissement" : "Participant"}`);
+  };
 
   const filtered = users?.filter((u) => {
     const matchSearch =
@@ -51,6 +81,9 @@ const Utilisateurs = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* ✅ Toast */}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
 
       {/* Header */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
@@ -123,7 +156,6 @@ const Utilisateurs = () => {
         </div>
       </div>
 
-      {/* Loading */}
       {loading && (
         <div className="flex justify-center py-12">
           <Loader2 className="animate-spin text-[#FEBD00]" size={32} />
@@ -133,7 +165,6 @@ const Utilisateurs = () => {
         <p className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-xl">Erreur de chargement</p>
       )}
 
-      {/* Empty */}
       {!loading && filtered?.length === 0 && (
         <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center text-gray-400">
           <Users className="mx-auto mb-3 opacity-10" size={48} />
@@ -156,7 +187,6 @@ const Utilisateurs = () => {
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  {/* Avatar */}
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0 relative ${
                     isAdmin ? "bg-[#FEBD00] text-black" : "bg-slate-100 text-slate-600"
                   }`}>
@@ -164,7 +194,6 @@ const Utilisateurs = () => {
                     <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${roleConfig.dot}`} />
                   </div>
 
-                  {/* Infos */}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold text-slate-800 text-sm">{user.username}</h3>
@@ -180,7 +209,7 @@ const Utilisateurs = () => {
                 <div className="flex items-center gap-1 flex-shrink-0 opacity-50 group-hover:opacity-100 transition-opacity">
                   <button
                     title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
-                    onClick={() => handleToggleAdmin(user.id)}
+                    onClick={() => handleToggleAdmin(user)} // ✅ passe user entier
                     className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
                       user.role === "admin"
                         ? "bg-[#FEBD00] text-black hover:bg-yellow-400"
@@ -192,7 +221,7 @@ const Utilisateurs = () => {
 
                   <button
                     title={user.role === "etablissement" ? "Retirer etablissement" : "Rendre etablissement"}
-                    onClick={() => handleToggleEtablissement(user.id)}
+                    onClick={() => handleToggleEtablissement(user)} // ✅ passe user entier
                     className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
                       user.role === "etablissement"
                         ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
