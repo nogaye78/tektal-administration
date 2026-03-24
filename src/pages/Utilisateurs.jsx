@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
 import { deleteUser, toggleAdmin, toggleEtablissement } from "../api/apiService";
 
@@ -12,25 +12,19 @@ const ROLE_CONFIG = {
 const ITEMS_PER_PAGE = 8;
 
 const Utilisateurs = () => {
-  const { data: usersRaw, loading, error, refetch } = useConnectedUsers();
+  const { data: users, loading, error, refetch } = useConnectedUsers();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [confirmAction, setConfirmAction] = useState(null);
   const [toggling, setToggling] = useState(false);
   const [toast, setToast] = useState(null);
-
-  // ✅ Normalisation : is_superuser OU is_super_admin OU isSuperUser
-  const users = usersRaw?.map((u) => ({
-    ...u,
-    is_superuser: u.is_superuser || u.is_super_admin || u.isSuperUser || false,
-  }));
+  const [currentPage, setCurrentPage] = useState(1);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleDelete = async () => {
@@ -39,7 +33,7 @@ const Utilisateurs = () => {
     setUserToDelete(null);
     setDeleting(false);
     refetch();
-    showToast("Utilisateur supprimé avec succès", "success");
+    showToast("Utilisateur supprimé avec succès");
   };
 
   const handleConfirmToggle = async () => {
@@ -53,12 +47,11 @@ const Utilisateurs = () => {
     setToggling(false);
     setConfirmAction(null);
     refetch();
-    showToast("Statut modifié avec succès", "success");
+    showToast("Statut modifié avec succès");
   };
 
-  // ✅ Toast rouge spécial superadmin
   const handleSuperAdminAction = () => {
-    showToast("🔒 Action impossible — le Super Admin est intouchable !", "error");
+    showToast("Impossible de modifier le Super Admin", "error");
   };
 
   const filtered = users?.filter((u) => {
@@ -67,15 +60,20 @@ const Utilisateurs = () => {
       u.email?.toLowerCase().includes(search.toLowerCase());
     const matchRole = filterRole === "all" || u.role === filterRole;
     return matchSearch && matchRole;
-  });
+  }) || [];
 
-  const totalItems = filtered?.length || 0;
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginated = filtered?.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+  // ✅ Pagination
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const handleSearchChange = (e) => { setSearch(e.target.value); setCurrentPage(1); };
-  const handleRoleChange = (key) => { setFilterRole(key); setCurrentPage(1); };
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Reset page on search/filter change
+  const handleSearch = (val) => { setSearch(val); setCurrentPage(1); };
+  const handleFilter = (val) => { setFilterRole(val); setCurrentPage(1); };
 
   const counts = {
     all: users?.length || 0,
@@ -104,31 +102,15 @@ const Utilisateurs = () => {
       : `Voulez-vous rendre ${user.username} Etablissement ?`;
   };
 
-  const getPageNumbers = () => {
-    const pages = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (safePage > 3) pages.push("...");
-      for (let i = Math.max(2, safePage - 1); i <= Math.min(totalPages - 1, safePage + 1); i++) pages.push(i);
-      if (safePage < totalPages - 2) pages.push("...");
-      pages.push(totalPages);
-    }
-    return pages;
-  };
-
   return (
     <div className="space-y-6">
 
-      {/* ✅ Toast — rouge pour superadmin, vert pour succès */}
+      {/* ✅ Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-[9999] px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-2 border ${
-          toast.type === "error"
-            ? "bg-red-600 text-white border-red-700 shadow-red-200"
-            : "bg-green-500 text-white border-green-600 shadow-green-200"
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 transition-all animate-pulse ${
+          toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
         }`}>
-          {toast.message}
+          {toast.type === "success" ? "✅" : "🚫"} {toast.message}
         </div>
       )}
 
@@ -174,7 +156,7 @@ const Utilisateurs = () => {
             type="text"
             placeholder="Rechercher par nom ou email..."
             value={search}
-            onChange={handleSearchChange}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm bg-white"
           />
         </div>
@@ -182,26 +164,35 @@ const Utilisateurs = () => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => handleRoleChange(tab.key)}
+              onClick={() => handleFilter(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterRole === tab.key
                   ? "bg-[#FEBD00] text-black shadow-sm"
                   : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
               }`}
             >
-              {tab.icon} {tab.label}
+              {tab.icon}
+              {tab.label}
               <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
                 filterRole === tab.key ? "bg-black/10 text-black" : "bg-gray-100 text-gray-500"
-              }`}>{counts[tab.key]}</span>
+              }`}>
+                {counts[tab.key]}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {loading && <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#FEBD00]" size={32} /></div>}
-      {error && <p className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-xl">Erreur de chargement</p>}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="animate-spin text-[#FEBD00]" size={32} />
+        </div>
+      )}
+      {error && (
+        <p className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-xl">Erreur de chargement</p>
+      )}
 
-      {!loading && filtered?.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center text-gray-400">
           <Users className="mx-auto mb-3 opacity-10" size={48} />
           <p className="font-semibold">Aucun utilisateur trouve</p>
@@ -209,8 +200,8 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* Tableau */}
-      {!loading && paginated?.length > 0 && (
+      {/* ✅ Tableau */}
+      {!loading && paginated.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -225,41 +216,34 @@ const Utilisateurs = () => {
               {paginated.map((user) => {
                 const roleConfig = ROLE_CONFIG[user.role] || ROLE_CONFIG.participant;
                 const isAdmin = user.role === "admin";
-                const isSuperAdmin = user.is_superuser === true;
+                const isSuperAdmin = user.is_superuser;
 
                 return (
-                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${isSuperAdmin ? "bg-gradient-to-r from-violet-50 to-purple-50/40 border-l-4 border-l-violet-500" : ""}`}>
+                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${isSuperAdmin ? "bg-blue-950/5" : ""}`}>
 
                     {/* Utilisateur */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div className={`flex-shrink-0 ${isSuperAdmin ? "p-[2px] rounded-xl bg-gradient-to-br from-violet-500 to-purple-700" : ""}`}>
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm relative ${
-                            isSuperAdmin ? "bg-gradient-to-br from-violet-600 to-purple-800 text-white"
-                            : isAdmin ? "bg-[#FEBD00]/60 text-black"
+                        {/* ✅ Avatar superadmin bleu marine */}
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 relative ${
+                          isSuperAdmin
+                            ? "bg-blue-950 text-white"
+                            : isAdmin
+                            ? "bg-[#FEBD00] text-black"
                             : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {user.username?.charAt(0).toUpperCase()}
-                            {isSuperAdmin && (
-                              <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-600 rounded-full flex items-center justify-center">
-                                <Zap size={8} className="text-white fill-white" />
-                              </span>
-                            )}
-                            {!isSuperAdmin && <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${roleConfig.dot}`} />}
-                          </div>
+                        }`}>
+                          {user.username?.charAt(0).toUpperCase()}
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                            isSuperAdmin ? "bg-blue-950" : roleConfig.dot
+                          }`} />
                         </div>
-
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`font-semibold ${isSuperAdmin ? "text-violet-900" : "text-slate-800"}`}>
-                              {user.username}
-                            </span>
-                            {/* ✅ Badge violet dégradé Super Admin */}
+                            <span className="font-semibold text-slate-800">{user.username}</span>
+                            {/* ✅ Badge spécial superadmin bleu marine */}
                             {isSuperAdmin && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow shadow-violet-300">
-                                <Zap size={9} className="fill-white" />
-                                Super Admin
+                              <span className="flex items-center gap-1 bg-blue-950 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                                <Crown size={10} /> Super Admin
                               </span>
                             )}
                           </div>
@@ -271,11 +255,10 @@ const Utilisateurs = () => {
                     {/* Email */}
                     <td className="px-5 py-3.5 text-gray-400 text-xs hidden sm:table-cell">{user.email}</td>
 
-                    {/* Role badge */}
+                    {/* Role */}
                     <td className="px-5 py-3.5">
                       {isSuperAdmin ? (
-                        <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 border border-violet-300">
-                          <Zap size={9} className="fill-violet-600 text-violet-600" />
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-950/10 text-blue-950">
                           Super Admin
                         </span>
                       ) : (
@@ -289,15 +272,24 @@ const Utilisateurs = () => {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5 justify-end">
                         {isSuperAdmin ? (
-                          // ✅ Boutons grisés + toast rouge au clic
+                          // ✅ Superadmin — toast d'erreur au clic
                           <div className="flex items-center gap-1.5">
-                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-violet-50 text-violet-200 cursor-not-allowed border border-violet-100">
+                            <button
+                              onClick={handleSuperAdminAction}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
+                            >
                               <ShieldCheck size={15} />
                             </button>
-                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-violet-50 text-violet-200 cursor-not-allowed border border-violet-100">
+                            <button
+                              onClick={handleSuperAdminAction}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
+                            >
                               <Building2 size={15} />
                             </button>
-                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-violet-50 text-violet-200 cursor-not-allowed border border-violet-100">
+                            <button
+                              onClick={handleSuperAdminAction}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
+                            >
                               <Trash2 size={15} />
                             </button>
                           </div>
@@ -307,7 +299,9 @@ const Utilisateurs = () => {
                               title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
                               onClick={() => setConfirmAction({ user, type: "admin" })}
                               className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
-                                user.role === "admin" ? "bg-[#FEBD00] text-black hover:bg-yellow-400" : "bg-gray-50 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-yellow-700"
+                                user.role === "admin"
+                                  ? "bg-[#FEBD00] text-black hover:bg-yellow-400"
+                                  : "bg-gray-50 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-yellow-700"
                               }`}
                             >
                               <ShieldCheck size={15} />
@@ -316,7 +310,9 @@ const Utilisateurs = () => {
                               title={user.role === "etablissement" ? "Retirer etablissement" : "Rendre etablissement"}
                               onClick={() => setConfirmAction({ user, type: "etablissement" })}
                               className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
-                                user.role === "etablissement" ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600"
+                                user.role === "etablissement"
+                                  ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  : "bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600"
                               }`}
                             >
                               <Building2 size={15} />
@@ -339,53 +335,56 @@ const Utilisateurs = () => {
           </table>
 
           {/* ✅ Pagination */}
-          <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/30">
-            <p className="text-xs text-gray-400">
-              {totalItems === 0 ? "0" : `${(safePage - 1) * ITEMS_PER_PAGE + 1}–${Math.min(safePage * ITEMS_PER_PAGE, totalItems)}`} sur{" "}
-              <span className="font-semibold text-gray-600">{totalItems}</span> utilisateurs
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              {getPageNumbers().map((page, i) =>
-                page === "..." ? (
-                  <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-300 text-sm">…</span>
-                ) : (
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/30">
+              <p className="text-xs text-gray-400">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} sur {filtered.length} utilisateurs
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => handlePageChange(page)}
                     className={`w-8 h-8 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                      safePage === page ? "bg-[#FEBD00] text-black shadow-sm" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                      page === currentPage
+                        ? "bg-[#FEBD00] text-black shadow-sm"
+                        : "border border-gray-200 text-gray-500 hover:bg-gray-100"
                     }`}
                   >
                     {page}
                   </button>
-                )
-              )}
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                <ChevronRight size={15} />
-              </button>
+                ))}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200 text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Modal confirmation statut */}
+      {/* ✅ Modal confirmation statut */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900">Confirmer le changement</h2>
-              <button onClick={() => setConfirmAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition"><X size={18} /></button>
+              <button onClick={() => setConfirmAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
             </div>
             <div className="flex items-center gap-3 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl p-3.5">
               <div className="w-11 h-11 rounded-xl bg-[#FEBD00] text-black flex items-center justify-center font-bold text-base flex-shrink-0">
@@ -398,8 +397,17 @@ const Utilisateurs = () => {
             </div>
             <p className="text-gray-500 text-sm leading-relaxed">{getConfirmMessage()}</p>
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setConfirmAction(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">Annuler</button>
-              <button onClick={handleConfirmToggle} disabled={toggling} className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmToggle}
+                disabled={toggling}
+                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
                 {toggling ? <><Loader2 size={16} className="animate-spin" /> En cours...</> : "Confirmer"}
               </button>
             </div>
@@ -413,7 +421,9 @@ const Utilisateurs = () => {
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900">Supprimer l'utilisateur</h2>
-              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition"><X size={18} /></button>
+              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
             </div>
             <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl p-3.5">
               <div className="w-11 h-11 rounded-xl bg-[#FEBD00] text-black flex items-center justify-center font-bold text-base flex-shrink-0">
@@ -429,8 +439,17 @@ const Utilisateurs = () => {
               <span className="text-red-500 font-semibold">irreversible</span>.
             </p>
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setUserToDelete(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">Annuler</button>
-              <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
                 {deleting ? <><Loader2 size={16} className="animate-spin" /> Suppression...</> : "Supprimer"}
               </button>
             </div>
