@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, Crown } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
 import { deleteUser, toggleAdmin, toggleEtablissement } from "../api/apiService";
 
@@ -16,9 +16,17 @@ const Utilisateurs = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ✅ Toast de confirmation pour changement de rôle
-  const [roleAction, setRoleAction] = useState(null); // { user, type: 'admin' | 'etablissement' }
-  const [togglingRole, setTogglingRole] = useState(false);
+  // ✅ Toast de confirmation pour changement de statut
+  const [confirmAction, setConfirmAction] = useState(null); // { user, type: 'admin' | 'etablissement' }
+  const [toggling, setToggling] = useState(false);
+
+  // ✅ Toast notification
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -26,19 +34,22 @@ const Utilisateurs = () => {
     setUserToDelete(null);
     setDeleting(false);
     refetch();
+    showToast("Utilisateur supprimé avec succès");
   };
 
-  // ✅ Confirmer le changement de rôle
-  const handleConfirmRoleChange = async () => {
-    setTogglingRole(true);
-    if (roleAction.type === "admin") {
-      await toggleAdmin(roleAction.user.id);
+  // ✅ Confirmation avant toggle
+  const handleConfirmToggle = async () => {
+    if (!confirmAction) return;
+    setToggling(true);
+    if (confirmAction.type === "admin") {
+      await toggleAdmin(confirmAction.user.id);
     } else {
-      await toggleEtablissement(roleAction.user.id);
+      await toggleEtablissement(confirmAction.user.id);
     }
-    setRoleAction(null);
-    setTogglingRole(false);
+    setToggling(false);
+    setConfirmAction(null);
     refetch();
+    showToast("Statut modifié avec succès");
   };
 
   const filtered = users?.filter((u) => {
@@ -63,18 +74,31 @@ const Utilisateurs = () => {
     { key: "participant", label: "Participants", icon: <UserCheck size={13} /> },
   ];
 
-  // ✅ Label du changement de rôle
-  const getRoleActionLabel = () => {
-    if (!roleAction) return "";
-    const { user, type } = roleAction;
+  // ✅ Message de confirmation selon le type
+  const getConfirmMessage = () => {
+    if (!confirmAction) return "";
+    const { user, type } = confirmAction;
     if (type === "admin") {
-      return user.role === "admin" ? "retirer le rôle Admin" : "passer en Admin";
+      return user.role === "admin"
+        ? `Voulez-vous retirer le rôle Admin à ${user.username} ?`
+        : `Voulez-vous rendre ${user.username} Admin ?`;
     }
-    return user.role === "etablissement" ? "retirer le rôle Etablissement" : "passer en Etablissement";
+    return user.role === "etablissement"
+      ? `Voulez-vous retirer le rôle Etablissement à ${user.username} ?`
+      : `Voulez-vous rendre ${user.username} Etablissement ?`;
   };
 
   return (
     <div className="space-y-6">
+
+      {/* ✅ Toast notification */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 transition-all ${
+          toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+        }`}>
+          {toast.type === "success" ? "✅" : "❌"} {toast.message}
+        </div>
+      )}
 
       {/* Header */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
@@ -162,134 +186,148 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* ✅ Tableau */}
+      {/* ✅ Tableau utilisateurs */}
       {!loading && filtered?.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Utilisateur</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Email</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Role</th>
-                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map((user) => {
-                  const roleConfig = ROLE_CONFIG[user.role] || ROLE_CONFIG.participant;
-                  const isAdmin = user.role === "admin";
-                  return (
-                    <tr key={user.id} className="hover:bg-gray-50/50 transition group">
-                      {/* Avatar + Nom */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 relative ${
-                            isAdmin ? "bg-[#FEBD00] text-black" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {user.username?.charAt(0).toUpperCase()}
-                            <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${roleConfig.dot}`} />
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Utilisateur</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Email</th>
+                <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Role</th>
+                <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filtered.map((user) => {
+                const roleConfig = ROLE_CONFIG[user.role] || ROLE_CONFIG.participant;
+                const isAdmin = user.role === "admin";
+                const isSuperAdmin = user.is_superuser; // ✅ superadmin détecté
+
+                return (
+                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${isSuperAdmin ? "bg-[#FEBD00]/5" : ""}`}>
+
+                    {/* Utilisateur */}
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 relative ${
+                          isSuperAdmin ? "bg-[#FEBD00] text-black" : isAdmin ? "bg-[#FEBD00]/60 text-black" : "bg-slate-100 text-slate-600"
+                        }`}>
+                          {user.username?.charAt(0).toUpperCase()}
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${roleConfig.dot}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-800">{user.username}</span>
+                            {/* ✅ Badge spécial superadmin */}
+                            {isSuperAdmin && (
+                              <span className="flex items-center gap-0.5 bg-[#FEBD00] text-black text-xs px-2 py-0.5 rounded-full font-bold">
+                                <Crown size={10} /> Super Admin
+                              </span>
+                            )}
                           </div>
-                          <span className="font-semibold text-slate-800">{user.username}</span>
+                          <p className="text-xs text-gray-400 sm:hidden">{user.email}</p>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* Email */}
-                      <td className="px-5 py-4 text-gray-400 text-xs">{user.email}</td>
+                    {/* Email */}
+                    <td className="px-5 py-3.5 text-gray-400 text-xs hidden sm:table-cell">{user.email}</td>
 
-                      {/* Role */}
-                      <td className="px-5 py-4">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${roleConfig.bg} ${roleConfig.text}`}>
-                          {roleConfig.label}
-                        </span>
-                      </td>
+                    {/* Role */}
+                    <td className="px-5 py-3.5">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${roleConfig.bg} ${roleConfig.text}`}>
+                        {roleConfig.label}
+                      </span>
+                    </td>
 
-                      {/* Actions */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center justify-end gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-                          {/* ✅ Bouton Admin avec confirmation */}
-                          <button
-                            title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
-                            onClick={() => setRoleAction({ user, type: "admin" })}
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
-                              user.role === "admin"
-                                ? "bg-[#FEBD00] text-black hover:bg-yellow-400"
-                                : "bg-gray-50 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-yellow-700"
-                            }`}
-                          >
-                            <ShieldCheck size={15} />
-                          </button>
+                    {/* Actions */}
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        {isSuperAdmin ? (
+                          // ✅ Superadmin — aucune action possible
+                          <span className="text-xs text-gray-300 italic">Protégé</span>
+                        ) : (
+                          <>
+                            <button
+                              title={user.role === "admin" ? "Retirer admin" : "Rendre admin"}
+                              onClick={() => setConfirmAction({ user, type: "admin" })}
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
+                                user.role === "admin"
+                                  ? "bg-[#FEBD00] text-black hover:bg-yellow-400"
+                                  : "bg-gray-50 text-gray-400 hover:bg-[#FEBD00]/20 hover:text-yellow-700"
+                              }`}
+                            >
+                              <ShieldCheck size={15} />
+                            </button>
 
-                          {/* ✅ Bouton Etablissement avec confirmation */}
-                          <button
-                            title={user.role === "etablissement" ? "Retirer etablissement" : "Rendre etablissement"}
-                            onClick={() => setRoleAction({ user, type: "etablissement" })}
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
-                              user.role === "etablissement"
-                                ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                : "bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600"
-                            }`}
-                          >
-                            <Building2 size={15} />
-                          </button>
+                            <button
+                              title={user.role === "etablissement" ? "Retirer etablissement" : "Rendre etablissement"}
+                              onClick={() => setConfirmAction({ user, type: "etablissement" })}
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition cursor-pointer ${
+                                user.role === "etablissement"
+                                  ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                  : "bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600"
+                              }`}
+                            >
+                              <Building2 size={15} />
+                            </button>
 
-                          {/* Supprimer */}
-                          <button
-                            title="Supprimer"
-                            onClick={() => setUserToDelete(user)}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            <button
+                              title="Supprimer"
+                              onClick={() => setUserToDelete(user)}
+                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* ✅ Modal confirmation changement de rôle */}
-      {roleAction && (
+      {/* ✅ Modal confirmation changement de statut */}
+      {confirmAction && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-900">Confirmer le changement</h2>
-              <button onClick={() => setRoleAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+              <button onClick={() => setConfirmAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
                 <X size={18} />
               </button>
             </div>
 
             <div className="flex items-center gap-3 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl p-3.5">
               <div className="w-11 h-11 rounded-xl bg-[#FEBD00] text-black flex items-center justify-center font-bold text-base flex-shrink-0">
-                {roleAction.user.username?.charAt(0).toUpperCase()}
+                {confirmAction.user.username?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="font-bold text-slate-800 text-sm">{roleAction.user.username}</p>
-                <p className="text-xs text-gray-400">{roleAction.user.email}</p>
+                <p className="font-bold text-slate-800 text-sm">{confirmAction.user.username}</p>
+                <p className="text-xs text-gray-400">{confirmAction.user.email}</p>
               </div>
             </div>
 
-            <p className="text-gray-500 text-sm leading-relaxed">
-              Voulez-vous vraiment <span className="font-semibold text-slate-800">{getRoleActionLabel()}</span> pour cet utilisateur ?
-            </p>
+            <p className="text-gray-500 text-sm leading-relaxed">{getConfirmMessage()}</p>
 
             <div className="flex gap-3 pt-1">
               <button
-                onClick={() => setRoleAction(null)}
+                onClick={() => setConfirmAction(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold"
               >
                 Annuler
               </button>
               <button
-                onClick={handleConfirmRoleChange}
-                disabled={togglingRole}
-                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={handleConfirmToggle}
+                disabled={toggling}
+                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {togglingRole ? <><Loader2 size={16} className="animate-spin" /> Modification...</> : "Confirmer"}
+                {toggling ? <><Loader2 size={16} className="animate-spin" /> En cours...</> : "Confirmer"}
               </button>
             </div>
           </div>
