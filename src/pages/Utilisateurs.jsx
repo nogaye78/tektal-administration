@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Users, ShieldCheck, Trash2, X, Building2, Loader2, UserCheck, Crown, ChevronLeft, ChevronRight, Zap } from "lucide-react";
 import { useConnectedUsers } from "../api/hooks";
 import { deleteUser, toggleAdmin, toggleEtablissement } from "../api/apiService";
 
@@ -17,7 +17,7 @@ const Utilisateurs = () => {
   const [filterRole, setFilterRole] = useState("all");
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1); // ✅ Page courante
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [confirmAction, setConfirmAction] = useState(null);
   const [toggling, setToggling] = useState(false);
@@ -25,7 +25,7 @@ const Utilisateurs = () => {
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   const handleDelete = async () => {
@@ -51,7 +51,10 @@ const Utilisateurs = () => {
     showToast("Statut modifié avec succès");
   };
 
-  // ✅ Filtrage
+  const handleSuperAdminAction = () => {
+    showToast("Action impossible : le Super Admin est protégé", "error");
+  };
+
   const filtered = users?.filter((u) => {
     const matchSearch =
       u.username?.toLowerCase().includes(search.toLowerCase()) ||
@@ -60,21 +63,18 @@ const Utilisateurs = () => {
     return matchSearch && matchRole;
   });
 
-  // ✅ Pagination calculée sur les résultats filtrés
-  const totalPages = Math.ceil((filtered?.length || 0) / ITEMS_PER_PAGE);
-  const paginated = filtered?.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const totalItems = filtered?.length || 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filtered?.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
-  // ✅ Reset page quand search ou filtre change
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setCurrentPage(1);
   };
 
-  const handleFilterChange = (role) => {
-    setFilterRole(role);
+  const handleRoleChange = (key) => {
+    setFilterRole(key);
     setCurrentPage(1);
   };
 
@@ -105,18 +105,17 @@ const Utilisateurs = () => {
       : `Voulez-vous rendre ${user.username} Etablissement ?`;
   };
 
-  // ✅ Génère les numéros de pages à afficher (avec ellipsis)
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
       pages.push(1);
-      if (currentPage > 3) pages.push("...");
-      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      if (safePage > 3) pages.push("...");
+      for (let i = Math.max(2, safePage - 1); i <= Math.min(totalPages - 1, safePage + 1); i++) {
         pages.push(i);
       }
-      if (currentPage < totalPages - 2) pages.push("...");
+      if (safePage < totalPages - 2) pages.push("...");
       pages.push(totalPages);
     }
     return pages;
@@ -125,12 +124,11 @@ const Utilisateurs = () => {
   return (
     <div className="space-y-6">
 
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 transition-all ${
           toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
         }`}>
-          {toast.type === "success" ? "✅" : "❌"} {toast.message}
+          {toast.type === "success" ? "✅" : "🚫"} {toast.message}
         </div>
       )}
 
@@ -176,7 +174,7 @@ const Utilisateurs = () => {
             type="text"
             placeholder="Rechercher par nom ou email..."
             value={search}
-            onChange={handleSearchChange} // ✅ reset page
+            onChange={handleSearchChange}
             className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm bg-white"
           />
         </div>
@@ -184,7 +182,7 @@ const Utilisateurs = () => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => handleFilterChange(tab.key)} // ✅ reset page
+              onClick={() => handleRoleChange(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 filterRole === tab.key
                   ? "bg-[#FEBD00] text-black shadow-sm"
@@ -239,21 +237,33 @@ const Utilisateurs = () => {
                 const isSuperAdmin = user.is_superuser;
 
                 return (
-                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${isSuperAdmin ? "bg-[#FEBD00]/5" : ""}`}>
+                  <tr
+                    key={user.id}
+                    className={`hover:bg-gray-50/50 transition-colors ${
+                      isSuperAdmin ? "bg-gradient-to-r from-violet-50/60 to-[#FEBD00]/5 border-l-2 border-l-violet-400" : ""
+                    }`}
+                  >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 relative ${
-                          isSuperAdmin ? "bg-[#FEBD00] text-black" : isAdmin ? "bg-[#FEBD00]/60 text-black" : "bg-slate-100 text-slate-600"
-                        }`}>
-                          {user.username?.charAt(0).toUpperCase()}
-                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${roleConfig.dot}`} />
+                        <div className={`relative flex-shrink-0 ${isSuperAdmin ? "p-[2px] rounded-xl bg-gradient-to-br from-violet-500 to-purple-700" : ""}`}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm relative ${
+                            isSuperAdmin
+                              ? "bg-gradient-to-br from-violet-600 to-purple-800 text-white"
+                              : isAdmin
+                              ? "bg-[#FEBD00]/60 text-black"
+                              : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {user.username?.charAt(0).toUpperCase()}
+                            <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${roleConfig.dot}`} />
+                          </div>
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-slate-800">{user.username}</span>
                             {isSuperAdmin && (
-                              <span className="flex items-center gap-0.5 bg-[#FEBD00] text-black text-xs px-2 py-0.5 rounded-full font-bold">
-                                <Crown size={10} /> Super Admin
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-sm shadow-violet-300">
+                                <Zap size={9} className="fill-white" />
+                                Super Admin
                               </span>
                             )}
                           </div>
@@ -261,16 +271,35 @@ const Utilisateurs = () => {
                         </div>
                       </div>
                     </td>
+
                     <td className="px-5 py-3.5 text-gray-400 text-xs hidden sm:table-cell">{user.email}</td>
+
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${roleConfig.bg} ${roleConfig.text}`}>
-                        {roleConfig.label}
-                      </span>
+                      {isSuperAdmin ? (
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 border border-violet-200">
+                          Super Admin
+                        </span>
+                      ) : (
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${roleConfig.bg} ${roleConfig.text}`}>
+                          {roleConfig.label}
+                        </span>
+                      )}
                     </td>
+
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5 justify-end">
                         {isSuperAdmin ? (
-                          <span className="text-xs text-gray-300 italic">Protégé</span>
+                          <>
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
+                              <ShieldCheck size={15} />
+                            </button>
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
+                              <Building2 size={15} />
+                            </button>
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
+                              <Trash2 size={15} />
+                            </button>
+                          </>
                         ) : (
                           <>
                             <button
@@ -312,53 +341,42 @@ const Utilisateurs = () => {
             </tbody>
           </table>
 
-          {/* ✅ Pagination */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/30">
               <p className="text-xs text-gray-400">
-                Affichage{" "}
-                <span className="font-semibold text-gray-600">
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}
-                </span>{" "}
-                sur <span className="font-semibold text-gray-600">{filtered.length}</span> utilisateurs
+                {(safePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safePage * ITEMS_PER_PAGE, totalItems)} sur{" "}
+                <span className="font-semibold text-gray-600">{totalItems}</span> utilisateurs
               </p>
-
               <div className="flex items-center gap-1">
-                {/* Bouton Précédent */}
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200 text-gray-500 hover:bg-white hover:border-[#FEBD00] hover:text-[#FEBD00] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                  disabled={safePage === 1}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                 >
                   <ChevronLeft size={15} />
                 </button>
-
-                {/* Numéros de pages */}
-                {getPageNumbers().map((page, idx) =>
+                {getPageNumbers().map((page, i) =>
                   page === "..." ? (
-                    <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-gray-400 text-xs">
-                      …
-                    </span>
+                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-300 text-sm">…</span>
                   ) : (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
                       className={`w-8 h-8 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                        currentPage === page
+                        safePage === page
                           ? "bg-[#FEBD00] text-black shadow-sm"
-                          : "border border-gray-200 text-gray-500 hover:bg-white hover:border-[#FEBD00] hover:text-[#FEBD00]"
+                          : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
                       }`}
                     >
                       {page}
                     </button>
                   )
                 )}
-
-                {/* Bouton Suivant */}
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center border border-gray-200 text-gray-500 hover:bg-white hover:border-[#FEBD00] hover:text-[#FEBD00] disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                  disabled={safePage === totalPages}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                 >
                   <ChevronRight size={15} />
                 </button>
@@ -368,8 +386,80 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* Modals inchangés... */}
-      {/* (garder les 2 modals confirmAction et userToDelete identiques à l'original) */}
+      {/* Modal confirmation statut */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Confirmer le changement</h2>
+              <button onClick={() => setConfirmAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl p-3.5">
+              <div className="w-11 h-11 rounded-xl bg-[#FEBD00] text-black flex items-center justify-center font-bold text-base flex-shrink-0">
+                {confirmAction.user.username?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">{confirmAction.user.username}</p>
+                <p className="text-xs text-gray-400">{confirmAction.user.email}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">{getConfirmMessage()}</p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setConfirmAction(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmToggle}
+                disabled={toggling}
+                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {toggling ? <><Loader2 size={16} className="animate-spin" /> En cours...</> : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal suppression */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Supprimer l'utilisateur</h2>
+              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl p-3.5">
+              <div className="w-11 h-11 rounded-xl bg-[#FEBD00] text-black flex items-center justify-center font-bold text-base flex-shrink-0">
+                {userToDelete.username?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">{userToDelete.username}</p>
+                <p className="text-xs text-gray-400">{userToDelete.email}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Voulez-vous vraiment supprimer cet utilisateur ? Cette action est{" "}
+              <span className="text-red-500 font-semibold">irreversible</span>.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setUserToDelete(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {deleting ? <><Loader2 size={16} className="animate-spin" /> Suppression...</> : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
