@@ -86,11 +86,23 @@ export const createPath = async (formData) => {
   return response.data;
 };
 
-export const deletePath = async (id) => {
+// Masquer un chemin
+export const hidePath = async (id) => {
   const token = localStorage.getItem("access_token");
-  await pathsApi.delete(`paths/${id}/`, {
+  const res = await fetch(`${BASE_URL}/admin-panel/api/paths/${id}/hide/`, {
+    method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
+  return res.json();
+};
+
+export const deletePath = async (id) => {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${BASE_URL}/admin-panel/api/paths/${id}/delete/`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res;
 };
 
 export const approvePath = async (id) => {

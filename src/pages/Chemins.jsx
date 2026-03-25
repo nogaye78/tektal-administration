@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, Trash2, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
 import { fetchEtablissements } from "../api/apiService";
+
+const ITEMS_PER_PAGE = 10;
 
 const STATUS_COLORS = {
   draft: "bg-yellow-100 text-yellow-600",
@@ -13,7 +15,7 @@ const STATUS_COLORS = {
 const STATUS_LABELS = {
   draft: "En attente",
   published: "Approuve",
-  hidden: "Refuse",
+  hidden: "Masque",
   deleted: "Supprime",
 };
 
@@ -104,7 +106,7 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 const Chemins = () => {
   const { data, loading, error, refetch } = usePathsList();
   const chemins = data || [];
-  const { approve, reject } = usePathActions(refetch);
+  const { approve, reject, remove, hide } = usePathActions(refetch);
   const { create, loading: creating } = useCreatePath(refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -116,8 +118,57 @@ const Chemins = () => {
   const [videoName, setVideoName] = useState("");
   const [expandedVideo, setExpandedVideo] = useState(null);
   const [etablissements, setEtablissements] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // ✅ establishment_id ajouté dans le state
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [actioning, setActioning] = useState(false);
+
+  const ACTION_CONFIG = {
+    approve: {
+      label: "Approuver",
+      message: "Voulez-vous approuver ce chemin ?",
+      btnClass: "bg-[#FEBD00] text-black hover:bg-yellow-400",
+      toastMsg: "Chemin approuvé ✅",
+    },
+    reject: {
+      label: "Refuser",
+      message: "Voulez-vous refuser ce chemin ?",
+      btnClass: "bg-gray-500 text-white hover:bg-gray-600",
+      toastMsg: "Chemin refusé",
+    },
+    hide: {
+      label: "Masquer",
+      message: "Voulez-vous masquer ce chemin ?",
+      btnClass: "bg-slate-700 text-white hover:bg-slate-800",
+      toastMsg: "Chemin masqué",
+    },
+    delete: {
+      label: "Supprimer",
+      message: "Voulez-vous supprimer définitivement ce chemin ?",
+      btnClass: "bg-red-500 text-white hover:bg-red-600",
+      toastMsg: "Chemin supprimé",
+    },
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return;
+    setActioning(true);
+    const { chemin, type } = confirmAction;
+    if (type === "approve") await approve(chemin.id);
+    else if (type === "reject") await reject(chemin.id);
+    else if (type === "hide") await hide(chemin.id);
+    else if (type === "delete") await remove(chemin.id);
+    setActioning(false);
+    setConfirmAction(null);
+    showToast(ACTION_CONFIG[type].toastMsg, type === "delete" ? "error" : "success");
+  };
+
   const [formData, setFormData] = useState({
     title: "", start_label: "", end_label: "",
     establishment_id: null,
@@ -144,16 +195,49 @@ const Chemins = () => {
 
   const filteredChemins = chemins.filter((c) => {
     const matchSearch = (c.title || "").toLowerCase().includes(searchTerm.toLowerCase());
+    // ✅ "hidden" remplace "refuse" comme clé de filtre
     const matchStatus = filterStatus === "all" || c.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  // ✅ Pagination
+  const totalItems = filteredChemins.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginated = filteredChemins.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
+  const handleSearchChange = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
+  const handleFilterChange = (key) => { setFilterStatus(key); setCurrentPage(1); };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (safePage > 3) pages.push("...");
+      for (let i = Math.max(2, safePage - 1); i <= Math.min(totalPages - 1, safePage + 1); i++) pages.push(i);
+      if (safePage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const counts = {
     all: chemins.length,
     draft: chemins.filter((c) => c.status === "draft").length,
     published: chemins.filter((c) => c.status === "published").length,
+    // ✅ "hidden" à la place de "hidden" (anciennement "refuse")
     hidden: chemins.filter((c) => c.status === "hidden").length,
   };
+
+  // ✅ Tabs mis à jour : "Refuses" → "Masques", key "hidden"
+  const tabs = [
+    { key: "all", label: "Tous" },
+    { key: "draft", label: "En attente" },
+    { key: "published", label: "Approuves" },
+    { key: "hidden", label: "Masques" },
+  ];
 
   const handleVideoChange = async (e) => {
     const file = e.target.files[0];
@@ -184,12 +268,10 @@ const Chemins = () => {
     setFormData((prev) => ({ ...prev, steps: newSteps }));
   };
 
-  // ✅ handleCreate corrigé avec establishment_id
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
     if (!formData.establishment_id) { setUploadError("Veuillez choisir un etablissement."); return; }
-
     await create({
       title: formData.title,
       start_label: formData.start_label,
@@ -203,7 +285,6 @@ const Chemins = () => {
       duration: formData.duration,
       steps: formData.steps,
     });
-
     setFormData({
       title: "", start_label: "", end_label: "",
       establishment_id: null,
@@ -214,20 +295,21 @@ const Chemins = () => {
         { step_number: 2, start_time: 10, end_time: 20, text: "" },
       ],
     });
-    setVideoName("");
-    setUploadError("");
-    setShowModal(false);
+    setVideoName(""); setUploadError(""); setShowModal(false);
+    showToast("Chemin créé avec succès ✅");
   };
-
-  const tabs = [
-    { key: "all", label: "Tous" },
-    { key: "draft", label: "En attente" },
-    { key: "published", label: "Approuves" },
-    { key: "hidden", label: "Refuses" },
-  ];
 
   return (
     <div className="space-y-6">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 ${
+          toast.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+        }`}>
+          {toast.type === "error" ? "🚫" : "✅"} {toast.message}
+        </div>
+      )}
 
       {/* Header */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
@@ -255,7 +337,7 @@ const Chemins = () => {
             </div>
             <div className="bg-white/10 rounded-xl px-4 py-3 text-center min-w-[64px]">
               <p className="text-2xl font-bold text-white">{counts.hidden}</p>
-              <p className="text-xs text-slate-400 mt-0.5">Refuses</p>
+              <p className="text-xs text-slate-400 mt-0.5">Masques</p>
             </div>
           </div>
         </div>
@@ -269,7 +351,7 @@ const Chemins = () => {
             <input
               type="text" placeholder="Rechercher un chemin..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#FEBD00] outline-none text-sm bg-white"
             />
           </div>
@@ -286,7 +368,7 @@ const Chemins = () => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setFilterStatus(tab.key)}
+              onClick={() => handleFilterChange(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                 filterStatus === tab.key
                   ? "bg-[#FEBD00] text-black shadow-sm"
@@ -315,84 +397,181 @@ const Chemins = () => {
         </div>
       )}
 
-      {/* Liste */}
-      <div className="space-y-2">
-        {filteredChemins.map((chemin) => (
-          <div key={chemin.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all group ${
-            chemin.status === "draft" ? "border-[#FEBD00]/30" : "border-gray-100"
-          }`}>
-            <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  chemin.status === "draft" ? "bg-[#FEBD00] text-black" : STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-500"
-                }`}>
-                  <Map size={18} />
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
-                  <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
-                  <p className="text-xs text-gray-400">Par <span className="font-semibold text-slate-600">{chemin.author}</span></p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABELS[chemin.status] || chemin.status}
-                    </span>
-                    {chemin.steps && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEBD00]/10 text-yellow-700 font-medium">
-                        {chemin.steps.length} etape{chemin.steps.length > 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {chemin.duration && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 font-medium">
-                        {chemin.duration}s
-                      </span>
-                    )}
+      {/* ✅ Liste paginée */}
+      {!loading && paginated.length > 0 && (
+        <div className="space-y-2">
+          {paginated.map((chemin) => (
+            <div key={chemin.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-all group ${
+              chemin.status === "draft" ? "border-[#FEBD00]/30" : "border-gray-100"
+            }`}>
+              <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    chemin.status === "draft" ? "bg-[#FEBD00] text-black" : STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-500"
+                  }`}>
+                    <Map size={18} />
                   </div>
+                  <div className="space-y-1 min-w-0">
+                    <h3 className="font-bold text-slate-800 text-sm sm:text-base">{chemin.title}</h3>
+                    <p className="text-xs text-gray-400">{chemin.start_label} → {chemin.end_label}</p>
+                    <p className="text-xs text-gray-400">Par <span className="font-semibold text-slate-600">{chemin.author}</span></p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
+                        {STATUS_LABELS[chemin.status] || chemin.status}
+                      </span>
+                      {chemin.steps && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEBD00]/10 text-yellow-700 font-medium">
+                          {chemin.steps.length} etape{chemin.steps.length > 1 ? "s" : ""}
+                        </span>
+                      )}
+                      {chemin.duration && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 font-medium">
+                          {chemin.duration}s
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-1.5 self-end sm:self-auto items-center flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => setSelectedChemin(chemin)}
+                    className="flex items-center gap-1.5 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    <Eye size={13} /> Detail
+                  </button>
+                  {chemin.video_url && (
+                    <button
+                      onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
+                      className="flex items-center gap-1 text-xs text-slate-500 font-medium border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                    >
+                      <Video size={13} />
+                      {expandedVideo === chemin.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setConfirmAction({ chemin, type: "approve" })}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#FEBD00]/10 text-yellow-700 hover:bg-[#FEBD00] hover:text-black transition cursor-pointer"
+                    title="Approuver"
+                  >
+                    <CheckCircle size={16} />
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction({ chemin, type: "hide" })}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+                    title="Masquer"
+                  >
+                    <EyeOff size={16} />
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction({ chemin, type: "delete" })}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
 
-              <div className="flex gap-1.5 self-end sm:self-auto items-center flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+              {expandedVideo === chemin.id && chemin.video_url && (
+                <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+                  <video src={chemin.video_url} controls className="w-full rounded-xl max-h-56 bg-black" />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* ✅ Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 py-3">
+              <p className="text-xs text-gray-400">
+                {(safePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safePage * ITEMS_PER_PAGE, totalItems)} sur{" "}
+                <span className="font-semibold text-gray-600">{totalItems}</span> chemins
+              </p>
+              <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setSelectedChemin(chemin)}
-                  className="flex items-center gap-1.5 text-xs text-slate-600 font-medium border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition cursor-pointer"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                 >
-                  <Eye size={13} /> Detail
+                  <ChevronLeft size={15} />
                 </button>
-                {chemin.video_url && (
-                  <button
-                    onClick={() => setExpandedVideo(expandedVideo === chemin.id ? null : chemin.id)}
-                    className="flex items-center gap-1 text-xs text-slate-500 font-medium border border-gray-200 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition cursor-pointer"
-                  >
-                    <Video size={13} />
-                    {expandedVideo === chemin.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                  </button>
+                {getPageNumbers().map((page, i) =>
+                  page === "..." ? (
+                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-300 text-sm">…</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                        safePage === page
+                          ? "bg-[#FEBD00] text-black shadow-sm"
+                          : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
                 )}
                 <button
-                  onClick={() => approve(chemin.id)}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#FEBD00]/10 text-yellow-700 hover:bg-[#FEBD00] hover:text-black transition cursor-pointer"
-                  title="Approuver"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                 >
-                  <CheckCircle size={16} />
-                </button>
-                <button
-                  onClick={() => reject(chemin.id)}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
-                  title="Refuser"
-                >
-                  <X size={16} />
+                  <ChevronRight size={15} />
                 </button>
               </div>
             </div>
-
-            {expandedVideo === chemin.id && chemin.video_url && (
-              <div className="px-4 pb-4 border-t border-gray-50 pt-3">
-                <video src={chemin.video_url} controls className="w-full rounded-xl max-h-56 bg-black" />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
 
       {selectedChemin && <CheminDetailModal chemin={selectedChemin} onClose={() => setSelectedChemin(null)} />}
+
+      {/* Modal confirmation */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Confirmer l'action</h2>
+              <button onClick={() => setConfirmAction(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <div className={`flex items-center gap-3 rounded-xl p-3.5 border ${
+              confirmAction.type === "delete" ? "bg-red-50 border-red-100" : "bg-[#FEBD00]/10 border-[#FEBD00]/20"
+            }`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                confirmAction.type === "delete" ? "bg-red-100 text-red-500" : "bg-[#FEBD00] text-black"
+              }`}>
+                <Map size={18} />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">{confirmAction.chemin.title}</p>
+                <p className="text-xs text-gray-400">{confirmAction.chemin.start_label} → {confirmAction.chemin.end_label}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              {ACTION_CONFIG[confirmAction.type].message}
+              {confirmAction.type === "delete" && (
+                <span className="text-red-500 font-semibold"> Cette action est irréversible.</span>
+              )}
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setConfirmAction(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={actioning}
+                className={`flex-1 py-2.5 rounded-xl font-semibold transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${ACTION_CONFIG[confirmAction.type].btnClass}`}
+              >
+                {actioning ? <><Loader2 size={16} className="animate-spin" /> En cours...</> : ACTION_CONFIG[confirmAction.type].label}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal création */}
       {showModal && (
@@ -407,11 +586,8 @@ const Chemins = () => {
                 <X size={20} />
               </button>
             </div>
-
             <div className="p-5 overflow-y-auto">
               <form onSubmit={handleCreate} className="space-y-4">
-
-                {/* Titre */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Titre *</label>
                   <input type="text" placeholder="Ex: Chemin vers la plage"
@@ -419,8 +595,6 @@ const Chemins = () => {
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none" required
                   />
                 </div>
-
-                {/* Trajet */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Trajet *</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -431,7 +605,6 @@ const Chemins = () => {
                       className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#FEBD00] outline-none"
                       required
                     />
-                    {/* ✅ Select établissement avec establishment_id */}
                     <select
                       value={formData.end_label}
                       onChange={(e) => {
@@ -439,7 +612,7 @@ const Chemins = () => {
                         setFormData({
                           ...formData,
                           end_label: e.target.value,
-                          establishment_id: selected?.id || null, // ✅ stocke l'id
+                          establishment_id: selected?.id || null,
                           end_lat: selected?.lat || "",
                           end_lng: selected?.lng || "",
                         });
@@ -449,13 +622,10 @@ const Chemins = () => {
                     >
                       <option value="">Choisir un etablissement</option>
                       {etablissements.map((et) => (
-                        <option key={et.id} value={et.name}>
-                          {et.name}
-                        </option>
+                        <option key={et.id} value={et.name}>{et.name}</option>
                       ))}
                     </select>
                   </div>
-
                   {formData.end_label && (
                     <div className="mt-2 flex items-center gap-2 bg-[#FEBD00]/10 border border-[#FEBD00]/20 rounded-xl px-3 py-2">
                       <Map size={14} className="text-[#FEBD00] flex-shrink-0" />
@@ -466,8 +636,6 @@ const Chemins = () => {
                     </div>
                   )}
                 </div>
-
-                {/* GPS départ */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">GPS depart (optionnel)</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -475,8 +643,6 @@ const Chemins = () => {
                     <input type="number" placeholder="Longitude" value={formData.start_lng} onChange={(e) => setFormData({ ...formData, start_lng: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none" step="any" />
                   </div>
                 </div>
-
-                {/* Video */}
                 <div>
                   <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Video *</label>
                   <label className="w-full border-2 border-dashed border-gray-200 rounded-xl px-4 py-5 flex flex-col items-center cursor-pointer hover:border-[#FEBD00] hover:bg-[#FEBD00]/5 transition">
@@ -490,8 +656,6 @@ const Chemins = () => {
                     <input type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
                   </label>
                 </div>
-
-                {/* Etapes */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Etapes ({formData.steps.length}/6)</label>
@@ -524,7 +688,6 @@ const Chemins = () => {
                     ))}
                   </div>
                 </div>
-
                 <button type="submit" disabled={creating || uploading}
                   className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
                 >

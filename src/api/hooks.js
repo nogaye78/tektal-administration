@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   fetchPaths, approvePath, rejectPath, createPath,
-  fetchConnectedUsers, deletePath,
+  fetchConnectedUsers, deletePath, hidePath, // ✅ hidePath ajouté
   fetchEtablissementPaths, approveEtablissementPath, rejectEtablissementPath,
 } from "./apiService";
 
@@ -41,12 +41,30 @@ export const usePathActions = (refetch) => {
   };
 
   const remove = async (id) => {
-    if (!window.confirm("Supprimer ce parcours ?")) return;
-    try { await deletePath(id); refetch(); }
-    catch (err) { console.error("Erreur suppression:", err); }
+    try {
+      const res = await deletePath(id);
+      // ✅ deletePath utilise fetch() natif — on vérifie le statut HTTP
+      if (res.ok || res.status === 204 || res.status === 200) {
+        refetch();
+      } else {
+        console.error("Suppression échouée, statut:", res.status);
+      }
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+    }
   };
 
-  return { approve, reject, remove };
+  const hide = async (id) => {
+    try {
+      // ✅ hidePath était manquant dans l'import, maintenant corrigé
+      await hidePath(id);
+      refetch();
+    } catch (err) {
+      console.error("Erreur masquage:", err);
+    }
+  };
+
+  return { approve, reject, remove, hide };
 };
 
 export const useCreatePath = (refetch) => {
