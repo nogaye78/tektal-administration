@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import {
   fetchPaths, approvePath, rejectPath, createPath,
-  fetchConnectedUsers, deletePath, hidePath, // ✅ hidePath ajouté
+  fetchConnectedUsers, deletePath, hidePath,
   fetchEtablissementPaths, approveEtablissementPath, rejectEtablissementPath,
+  deleteEtablissementPath, hideEtablissementPath,
 } from "./apiService";
 
 // ===========================
@@ -43,7 +44,6 @@ export const usePathActions = (refetch) => {
   const remove = async (id) => {
     try {
       const res = await deletePath(id);
-      // ✅ deletePath utilise fetch() natif — on vérifie le statut HTTP
       if (res.ok || res.status === 204 || res.status === 200) {
         refetch();
       } else {
@@ -56,7 +56,6 @@ export const usePathActions = (refetch) => {
 
   const hide = async (id) => {
     try {
-      // ✅ hidePath était manquant dans l'import, maintenant corrigé
       await hidePath(id);
       refetch();
     } catch (err) {
@@ -147,5 +146,27 @@ export const useEtablissementPathActions = (refetch) => {
     catch (err) { console.error("Erreur refus:", err); }
   };
 
-  return { approve, reject };
+  const remove = async (id) => {
+    try {
+      const res = await deleteEtablissementPath(id);
+      if (res.ok || res.status === 204 || res.status === 200) {
+        refetch();
+      } else {
+        console.error("Suppression échouée, statut:", res.status);
+      }
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+    }
+  };
+
+  const hide = async (id) => {
+    try {
+      await hideEtablissementPath(id);
+      refetch();
+    } catch (err) {
+      console.error("Erreur masquage:", err);
+    }
+  };
+
+  return { approve, reject, remove, hide };
 };

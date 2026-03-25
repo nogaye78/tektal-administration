@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { 
   Search, Map, CheckCircle, X, Video, Loader2, Plus, 
-  ChevronDown, ChevronUp, Eye, PlusCircle, ChevronLeft, ChevronRight
+  ChevronDown, ChevronUp, Eye, PlusCircle, ChevronLeft, ChevronRight, Trash2, EyeOff
 } from "lucide-react";
 import { useEtablissementPaths, useEtablissementPathActions } from "../api/hooks";
 import { createPath } from "../api/apiService";
@@ -108,7 +108,7 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 const MesChemins = () => {
   const { data, loading, error, refetch } = useEtablissementPaths();
   const chemins = data || [];
-  const { approve, reject } = useEtablissementPathActions(refetch);
+  const { approve, reject, remove, hide } = useEtablissementPathActions(refetch);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const establishmentName = user.establishment_name || "";
@@ -124,6 +124,37 @@ const MesChemins = () => {
   const [expandedVideo, setExpandedVideo] = useState(null);
   const [creating, setCreating] = useState(false);
 
+  // ✅ Toast
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // ✅ Confirmation suppression
+  const [cheminToDelete, setCheminToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // ✅ Confirmation masquage
+  const [cheminToHide, setCheminToHide] = useState(null);
+  const [hiding, setHiding] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await remove(cheminToDelete.id);
+    setDeleting(false);
+    setCheminToDelete(null);
+    showToast("Chemin supprimé avec succès");
+  };
+
+  const handleHide = async () => {
+    setHiding(true);
+    await hide(cheminToHide.id);
+    setHiding(false);
+    setCheminToHide(null);
+    showToast("Chemin masqué avec succès");
+  };
+
   const [formData, setFormData] = useState({
     title: "",
     start_label: "",
@@ -137,14 +168,12 @@ const MesChemins = () => {
     ],
   });
 
-  // ✅ Filtres + recherche
   const filteredChemins = chemins.filter((c) => {
     const matchSearch = (c.title || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === "all" || c.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
-  // ✅ Counts pour les tabs
   const counts = {
     all: chemins.length,
     draft: chemins.filter(c => c.status === "draft").length,
@@ -159,7 +188,6 @@ const MesChemins = () => {
     { key: "hidden", label: "Masques" },
   ];
 
-  // ✅ Pagination
   const totalItems = filteredChemins.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -254,6 +282,7 @@ const MesChemins = () => {
       resetForm();
       setShowModal(false);
       refetch();
+      showToast("Chemin créé avec succès ✅");
     } catch (err) {
       setUploadError(err.message || "Erreur lors de la creation.");
     } finally {
@@ -263,6 +292,15 @@ const MesChemins = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* ✅ Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 ${
+          toast.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
+        }`}>
+          {toast.type === "error" ? "🚫" : "✅"} {toast.message}
+        </div>
+      )}
 
       {/* Header */}
       <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 overflow-hidden">
@@ -318,7 +356,6 @@ const MesChemins = () => {
           </button>
         </div>
 
-        {/* ✅ Tabs filtres */}
         <div className="flex gap-2 flex-wrap">
           {tabs.map((tab) => (
             <button
@@ -352,7 +389,7 @@ const MesChemins = () => {
         </div>
       )}
 
-      {/* ✅ Liste paginée */}
+      {/* Liste paginée */}
       {!loading && paginated.length > 0 && (
         <div className="space-y-2">
           {paginated.map((chemin) => (
@@ -400,13 +437,23 @@ const MesChemins = () => {
                       {expandedVideo === chemin.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     </button>
                   )}
+                  {/* Approuver */}
                   <button onClick={() => approve(chemin.id)}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#FEBD00]/10 text-yellow-700 hover:bg-[#FEBD00] hover:text-black transition cursor-pointer">
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#FEBD00]/10 text-yellow-700 hover:bg-[#FEBD00] hover:text-black transition cursor-pointer"
+                    title="Approuver">
                     <CheckCircle size={16} />
                   </button>
-                  <button onClick={() => reject(chemin.id)}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer">
-                    <X size={16} />
+                  {/* ✅ Masquer */}
+                  <button onClick={() => setCheminToHide(chemin)}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
+                    title="Masquer">
+                    <EyeOff size={16} />
+                  </button>
+                  {/* ✅ Supprimer */}
+                  <button onClick={() => setCheminToDelete(chemin)}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
+                    title="Supprimer">
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -419,7 +466,7 @@ const MesChemins = () => {
             </div>
           ))}
 
-          {/* ✅ Pagination */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2 py-3">
               <p className="text-xs text-gray-400">
@@ -427,33 +474,24 @@ const MesChemins = () => {
                 <span className="font-semibold text-gray-600">{totalItems}</span> chemins
               </p>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={safePage === 1}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                >
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer">
                   <ChevronLeft size={15} />
                 </button>
                 {getPageNumbers().map((page, i) =>
                   page === "..." ? (
                     <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-gray-300 text-sm">…</span>
                   ) : (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
+                    <button key={page} onClick={() => setCurrentPage(page)}
                       className={`w-8 h-8 rounded-xl text-xs font-semibold transition cursor-pointer ${
                         safePage === page ? "bg-[#FEBD00] text-black shadow-sm" : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
-                    >
+                      }`}>
                       {page}
                     </button>
                   )
                 )}
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={safePage === totalPages}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                >
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer">
                   <ChevronRight size={15} />
                 </button>
               </div>
@@ -463,6 +501,79 @@ const MesChemins = () => {
       )}
 
       {selectedChemin && <CheminDetailModal chemin={selectedChemin} onClose={() => setSelectedChemin(null)} />}
+
+      {/* ✅ Modal confirmation masquage */}
+      {cheminToHide && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Masquer le chemin</h2>
+              <button onClick={() => setCheminToHide(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3.5">
+              <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0">
+                <EyeOff size={18} />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">{cheminToHide.title}</p>
+                <p className="text-xs text-gray-400">{cheminToHide.start_label} → {cheminToHide.end_label}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Voulez-vous vraiment masquer ce chemin ? Il ne sera plus visible par les utilisateurs.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setCheminToHide(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
+                Annuler
+              </button>
+              <button onClick={handleHide} disabled={hiding}
+                className="flex-1 py-2.5 rounded-xl bg-slate-700 text-white font-semibold hover:bg-slate-800 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
+                {hiding ? <><Loader2 size={16} className="animate-spin" /> Masquage...</> : "Masquer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Modal confirmation suppression */}
+      {cheminToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-900">Supprimer le chemin</h2>
+              <button onClick={() => setCheminToDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-xl hover:bg-gray-100 transition">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl p-3.5">
+              <div className="w-11 h-11 rounded-xl bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
+                <Map size={18} />
+              </div>
+              <div>
+                <p className="font-bold text-slate-800 text-sm">{cheminToDelete.title}</p>
+                <p className="text-xs text-gray-400">{cheminToDelete.start_label} → {cheminToDelete.end_label}</p>
+              </div>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              Voulez-vous vraiment supprimer ce chemin ? Cette action est{" "}
+              <span className="text-red-500 font-semibold">irreversible</span>.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setCheminToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
+                Annuler
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
+                {deleting ? <><Loader2 size={16} className="animate-spin" /> Suppression...</> : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal création */}
       {showModal && (
@@ -554,8 +665,7 @@ const MesChemins = () => {
                   </div>
                 </div>
                 <button type="submit" disabled={creating || uploading}
-                  className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
-                >
+                  className="w-full bg-[#FEBD00] hover:bg-yellow-400 text-black font-semibold py-3 rounded-xl transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm">
                   {creating ? <><Loader2 size={18} className="animate-spin" /> Creation...</> : "Creer le chemin"}
                 </button>
               </form>
