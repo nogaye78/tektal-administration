@@ -108,7 +108,7 @@ const Dashboard = () => {
           <StatCard label="Etablissements" value={isLoading ? "..." : totalEtablissements} icon={<Building2 size={20} />} />
           <StatCard label="Total Chemins" value={isLoading ? "..." : totalCheiminsEtab} icon={<Map size={20} />} active />
           <StatCard label="Approuves" value={isLoading ? "..." : cheminsApprouvesEtab} icon={<CheckCircle size={20} />} />
-          <StatCard label="Refuses" value={isLoading ? "..." : cheminsRefusesEtab} icon={<XCircle size={20} />} />
+          <StatCard label="Masques" value={isLoading ? "..." : cheminsRefusesEtab} icon={<XCircle size={20} />} />
         </div>
 
         {/* Resume */}
@@ -116,7 +116,7 @@ const Dashboard = () => {
           <h2 className="font-bold text-slate-800 mb-1">Resume des chemins</h2>
           <SummaryRow label="Chemins approuves" value={cheminsApprouvesEtab} icon={<CheckCircle size={15} />} loading={isLoading} />
           <SummaryRow label="Chemins en attente" value={cheminsAttenteEtab} icon={<Clock size={15} />} loading={isLoading} active />
-          <SummaryRow label="Chemins refuses" value={cheminsRefusesEtab} icon={<XCircle size={15} />} loading={isLoading} />
+          <SummaryRow label="Chemins Masqués" value={cheminsRefusesEtab} icon={<XCircle size={15} />} loading={isLoading} />
         </div>
 
       </div>
@@ -178,14 +178,14 @@ const Dashboard = () => {
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Statut des chemins</p>
           <StatCard label="Approuves" value={isLoading ? "..." : cheminsApprouves} icon={<CheckCircle size={20} />} />
           <StatCard label="En Attente" value={isLoading ? "..." : cheminsEnAttente} icon={<Clock size={20} />} active />
-          <StatCard label="Refuses" value={isLoading ? "..." : cheminsRefuses} icon={<XCircle size={20} />} />
+          <StatCard label="Masques" value={isLoading ? "..." : cheminsRefuses} icon={<XCircle size={20} />} />
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
           <h2 className="font-bold text-slate-800 mb-1">Resume rapide</h2>
           <SummaryRow label="Chemins approuves" value={cheminsApprouves} icon={<CheckCircle size={15} />} loading={isLoading} />
           <SummaryRow label="En attente" value={cheminsEnAttente} icon={<Clock size={15} />} loading={isLoading} active />
-          <SummaryRow label="Chemins refuses" value={cheminsRefuses} icon={<XCircle size={15} />} loading={isLoading} />
+          <SummaryRow label="Chemins Masques" value={cheminsRefuses} icon={<XCircle size={15} />} loading={isLoading} />
           <SummaryRow label="Etablissements" value={totalEtablissements} icon={<Building2 size={15} />} loading={isLoading} />
         </div>
 
