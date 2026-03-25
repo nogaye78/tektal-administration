@@ -144,6 +144,24 @@ export const rejectEtablissementPath = async (id) => {
   });
 };
 
+export const deleteEtablissementPath = async (id) => {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${BASE_URL}/admin-panel/api/etablissement/paths/${id}/delete/`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res;
+};
+
+export const hideEtablissementPath = async (id) => {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${BASE_URL}/admin-panel/api/etablissement/paths/${id}/hide/`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+};
+
 // ===========================
 // ETABLISSEMENT PROFILE
 // ===========================
