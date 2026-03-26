@@ -104,10 +104,10 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 };
 
 const Chemins = () => {
-  const { data, loading, error, refetch } = usePathsList();
+  const { data, loading, error, refetch, updatePath, removePath, addPath } = usePathsList();
   const chemins = data || [];
-  const { approve, reject, remove, hide } = usePathActions(refetch);
-  const { create, loading: creating } = useCreatePath(refetch);
+  const { approve, reject, remove, hide } = usePathActions(updatePath, removePath);
+  const { create, loading: creating } = useCreatePath(addPath, refetch);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");

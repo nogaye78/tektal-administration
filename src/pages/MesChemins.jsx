@@ -106,9 +106,9 @@ const CheminDetailModal = ({ chemin, onClose }) => {
 };
 
 const MesChemins = () => {
-  const { data, loading, error, refetch } = useEtablissementPaths();
+  const { data, loading, error, refetch, updatePath, removePath, addPath } = useEtablissementPaths();
   const chemins = data || [];
-  const { approve, reject, remove, hide } = useEtablissementPathActions(refetch);
+  const { approve, reject, remove, hide } = useEtablissementPathActions(updatePath, removePath);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const establishmentName = user.establishment_name || "";
@@ -267,7 +267,7 @@ const MesChemins = () => {
     if (!formData.video_url) { setUploadError("Veuillez uploader une video."); return; }
     setCreating(true);
     try {
-      await createPath({
+      const newPath = await createPath({
         title: formData.title,
         start_label: formData.start_label,
         end_label: formData.end_label,
@@ -279,9 +279,10 @@ const MesChemins = () => {
         duration: formData.duration,
         steps: formData.steps,
       });
+      if (newPath) addPath(newPath);
+      else refetch();
       resetForm();
       setShowModal(false);
-      refetch();
       showToast("Chemin créé avec succès ✅");
     } catch (err) {
       setUploadError(err.message || "Erreur lors de la creation.");
