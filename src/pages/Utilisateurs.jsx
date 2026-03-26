@@ -12,7 +12,7 @@ const ROLE_CONFIG = {
 const ITEMS_PER_PAGE = 8;
 
 const Utilisateurs = () => {
-  const { data: users, loading, error, refetch } = useConnectedUsers();
+  const { data: users, loading, error, removeUser, updateUser } = useConnectedUsers();
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [userToDelete, setUserToDelete] = useState(null);
@@ -27,31 +27,46 @@ const Utilisateurs = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // ✅ Suppression sans refetch
   const handleDelete = async () => {
     setDeleting(true);
-    await deleteUser(userToDelete.id);
-    setUserToDelete(null);
-    setDeleting(false);
-    refetch();
-    showToast("Utilisateur supprimé avec succès");
+    try {
+      await deleteUser(userToDelete.id);
+      removeUser(userToDelete.id);
+      showToast("Utilisateur supprimé avec succès");
+    } catch (err) {
+      showToast("Erreur lors de la suppression", "error");
+    } finally {
+      setUserToDelete(null);
+      setDeleting(false);
+    }
   };
 
+  // ✅ Toggle sans refetch
   const handleConfirmToggle = async () => {
     if (!confirmAction) return;
     setToggling(true);
-    if (confirmAction.type === "admin") {
-      await toggleAdmin(confirmAction.user.id);
-    } else {
-      await toggleEtablissement(confirmAction.user.id);
+    try {
+      let newRole;
+      if (confirmAction.type === "admin") {
+        await toggleAdmin(confirmAction.user.id);
+        newRole = confirmAction.user.role === "admin" ? "participant" : "admin";
+      } else {
+        await toggleEtablissement(confirmAction.user.id);
+        newRole = confirmAction.user.role === "etablissement" ? "participant" : "etablissement";
+      }
+      updateUser(confirmAction.user.id, newRole);
+      showToast("Statut modifié avec succès");
+    } catch (err) {
+      showToast("Erreur lors de la modification", "error");
+    } finally {
+      setToggling(false);
+      setConfirmAction(null);
     }
-    setToggling(false);
-    setConfirmAction(null);
-    refetch();
-    showToast("Statut modifié avec succès");
   };
 
   const handleSuperAdminAction = () => {
-    showToast("Impossible de modifier le Super Admin", "error");
+    showToast("🚫 Impossible de modifier le Super Admin", "error");
   };
 
   const filtered = users?.filter((u) => {
@@ -62,7 +77,6 @@ const Utilisateurs = () => {
     return matchSearch && matchRole;
   }) || [];
 
-  // ✅ Pagination
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -71,7 +85,6 @@ const Utilisateurs = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Reset page on search/filter change
   const handleSearch = (val) => { setSearch(val); setCurrentPage(1); };
   const handleFilter = (val) => { setFilterRole(val); setCurrentPage(1); };
 
@@ -105,9 +118,9 @@ const Utilisateurs = () => {
   return (
     <div className="space-y-6">
 
-      {/* ✅ Toast */}
+      {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 transition-all animate-pulse ${
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 transition-all ${
           toast.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"
         }`}>
           {toast.type === "success" ? "✅" : "🚫"} {toast.message}
@@ -200,7 +213,7 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* ✅ Tableau */}
+      {/* Tableau */}
       {!loading && paginated.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
@@ -220,16 +233,11 @@ const Utilisateurs = () => {
 
                 return (
                   <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${isSuperAdmin ? "bg-blue-950/5" : ""}`}>
-
-                    {/* Utilisateur */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        {/* ✅ Avatar superadmin bleu marine */}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 relative ${
-                          isSuperAdmin
-                            ? "bg-blue-950 text-white"
-                            : isAdmin
-                            ? "bg-[#FEBD00] text-black"
+                          isSuperAdmin ? "bg-blue-950 text-white"
+                            : isAdmin ? "bg-[#FEBD00] text-black"
                             : "bg-slate-100 text-slate-600"
                         }`}>
                           {user.username?.charAt(0).toUpperCase()}
@@ -240,7 +248,6 @@ const Utilisateurs = () => {
                         <div>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-slate-800">{user.username}</span>
-                            {/* ✅ Badge spécial superadmin bleu marine */}
                             {isSuperAdmin && (
                               <span className="flex items-center gap-1 bg-blue-950 text-white text-xs px-2 py-0.5 rounded-full font-bold">
                                 <Crown size={10} /> Super Admin
@@ -252,10 +259,8 @@ const Utilisateurs = () => {
                       </div>
                     </td>
 
-                    {/* Email */}
                     <td className="px-5 py-3.5 text-gray-400 text-xs hidden sm:table-cell">{user.email}</td>
 
-                    {/* Role */}
                     <td className="px-5 py-3.5">
                       {isSuperAdmin ? (
                         <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-blue-950/10 text-blue-950">
@@ -268,28 +273,17 @@ const Utilisateurs = () => {
                       )}
                     </td>
 
-                    {/* Actions */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5 justify-end">
                         {isSuperAdmin ? (
-                          // ✅ Superadmin — toast d'erreur au clic
                           <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={handleSuperAdminAction}
-                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
-                            >
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
                               <ShieldCheck size={15} />
                             </button>
-                            <button
-                              onClick={handleSuperAdminAction}
-                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
-                            >
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
                               <Building2 size={15} />
                             </button>
-                            <button
-                              onClick={handleSuperAdminAction}
-                              className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed"
-                            >
+                            <button onClick={handleSuperAdminAction} className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-50 text-gray-200 cursor-not-allowed">
                               <Trash2 size={15} />
                             </button>
                           </div>
@@ -334,7 +328,7 @@ const Utilisateurs = () => {
             </tbody>
           </table>
 
-          {/* ✅ Pagination */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-gray-50/30">
               <p className="text-xs text-gray-400">
@@ -348,7 +342,6 @@ const Utilisateurs = () => {
                 >
                   <ChevronLeft size={15} />
                 </button>
-
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
@@ -362,7 +355,6 @@ const Utilisateurs = () => {
                     {page}
                   </button>
                 ))}
-
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
@@ -376,7 +368,7 @@ const Utilisateurs = () => {
         </div>
       )}
 
-      {/* ✅ Modal confirmation statut */}
+      {/* Modal confirmation statut */}
       {confirmAction && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
@@ -397,17 +389,12 @@ const Utilisateurs = () => {
             </div>
             <p className="text-gray-500 text-sm leading-relaxed">{getConfirmMessage()}</p>
             <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setConfirmAction(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold"
-              >
+              <button onClick={() => setConfirmAction(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
                 Annuler
               </button>
-              <button
-                onClick={handleConfirmToggle}
-                disabled={toggling}
-                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
+              <button onClick={handleConfirmToggle} disabled={toggling}
+                className="flex-1 py-2.5 rounded-xl bg-[#FEBD00] text-black font-semibold hover:bg-yellow-400 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
                 {toggling ? <><Loader2 size={16} className="animate-spin" /> En cours...</> : "Confirmer"}
               </button>
             </div>
@@ -439,17 +426,12 @@ const Utilisateurs = () => {
               <span className="text-red-500 font-semibold">irreversible</span>.
             </p>
             <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => setUserToDelete(null)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold"
-              >
+              <button onClick={() => setUserToDelete(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition text-sm cursor-pointer font-semibold">
                 Annuler
               </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
+              <button onClick={handleDelete} disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
                 {deleting ? <><Loader2 size={16} className="animate-spin" /> Suppression...</> : "Supprimer"}
               </button>
             </div>
