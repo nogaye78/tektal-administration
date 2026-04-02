@@ -50,7 +50,17 @@ const CheminDetailModal = ({ chemin, onClose }) => {
           {chemin.video_url && (
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Video</p>
-              <video src={chemin.video_url} controls className="w-full rounded-xl max-h-48 bg-black" />
+              {/* ✅ Fix vidéo */}
+              <video
+                key={chemin.video_url}
+                controls
+                preload="metadata"
+                playsInline
+                className="w-full rounded-xl max-h-48 bg-gray-900"
+              >
+                <source src={chemin.video_url} type="video/mp4" />
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
             </div>
           )}
           <div>
@@ -124,18 +134,15 @@ const MesChemins = () => {
   const [expandedVideo, setExpandedVideo] = useState(null);
   const [creating, setCreating] = useState(false);
 
-  // ✅ Toast
   const [toast, setToast] = useState(null);
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ✅ Confirmation suppression
   const [cheminToDelete, setCheminToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // ✅ Confirmation masquage
   const [cheminToHide, setCheminToHide] = useState(null);
   const [hiding, setHiding] = useState(false);
 
@@ -294,7 +301,7 @@ const MesChemins = () => {
   return (
     <div className="space-y-6">
 
-      {/* ✅ Toast */}
+      {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-2xl shadow-lg text-sm font-semibold flex items-center gap-2 ${
           toast.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
@@ -438,19 +445,16 @@ const MesChemins = () => {
                       {expandedVideo === chemin.id ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     </button>
                   )}
-                  {/* Approuver */}
                   <button onClick={() => approve(chemin.id)}
                     className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#FEBD00]/10 text-yellow-700 hover:bg-[#FEBD00] hover:text-black transition cursor-pointer"
                     title="Approuver">
                     <CheckCircle size={16} />
                   </button>
-                  {/* ✅ Masquer */}
                   <button onClick={() => setCheminToHide(chemin)}
                     className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
                     title="Masquer">
                     <EyeOff size={16} />
                   </button>
-                  {/* ✅ Supprimer */}
                   <button onClick={() => setCheminToDelete(chemin)}
                     className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition cursor-pointer"
                     title="Supprimer">
@@ -459,9 +463,19 @@ const MesChemins = () => {
                 </div>
               </div>
 
+              {/* ✅ Video avec fix */}
               {expandedVideo === chemin.id && chemin.video_url && (
                 <div className="px-4 pb-4 border-t border-gray-50 pt-3">
-                  <video src={chemin.video_url} controls className="w-full rounded-xl max-h-56 bg-black" />
+                  <video
+                    key={chemin.video_url}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    className="w-full rounded-xl max-h-56 bg-gray-900"
+                  >
+                    <source src={chemin.video_url} type="video/mp4" />
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                  </video>
                 </div>
               )}
             </div>
@@ -503,7 +517,7 @@ const MesChemins = () => {
 
       {selectedChemin && <CheminDetailModal chemin={selectedChemin} onClose={() => setSelectedChemin(null)} />}
 
-      {/* ✅ Modal confirmation masquage */}
+      {/* Modal confirmation masquage */}
       {cheminToHide && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
@@ -539,7 +553,7 @@ const MesChemins = () => {
         </div>
       )}
 
-      {/* ✅ Modal confirmation suppression */}
+      {/* Modal confirmation suppression */}
       {cheminToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">

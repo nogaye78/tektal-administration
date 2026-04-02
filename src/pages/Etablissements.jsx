@@ -189,7 +189,7 @@ const Etablissements = () => {
         />
       </div>
 
-      {loading && <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#FEBD00]" size={32} /></div>}
+      {loading && <div className="flex justify-center py-12"><Loader2  className="animate-spin text-[#FEBD00]" size={32} /></div>}
       {error && <p className="text-red-500 text-center text-sm bg-red-50 p-3 rounded-xl">Erreur de chargement</p>}
 
       {!loading && filtered.length === 0 && (
