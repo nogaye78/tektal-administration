@@ -23,13 +23,10 @@ const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
-  fd.append("eager", "f_auto,q_auto"); // ✅ force l'encodage immédiat
   const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", { method: "POST", body: fd });
   const data = await res.json();
   if (!data.secure_url) throw new Error(data.error?.message || "Upload echoue");
-  // ✅ Utiliser l'URL avec format auto
-  const url = data.secure_url.replace('/upload/', '/upload/f_auto,q_auto/');
-  return { secure_url: url, duration: Math.round(data.duration || 60) };
+  return { secure_url: data.secure_url, duration: Math.round(data.duration || 60) };
 };
 
 const CheminDetailModal = ({ chemin, onClose }) => {
@@ -47,29 +44,22 @@ const CheminDetailModal = ({ chemin, onClose }) => {
           </button>
         </div>
         <div className="p-4 space-y-4 overflow-y-auto">
-          
           {chemin.video_url && (
-  <div>
-    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Video</p>
-    <video
-      key={chemin.video_url}
-      controls
-      preload="metadata"
-      playsInline
-      crossOrigin="anonymous"
-      className="w-full rounded-xl max-h-48 bg-gray-900"
-      onError={(e) => {
-        // ✅ Retry après 2s si la vidéo n'est pas encore prête
-        setTimeout(() => {
-          e.target.load();
-        }, 2000);
-      }}
-    >
-      <source src={chemin.video_url} type="video/mp4" />
-      <source src={chemin.video_url.replace('/upload/', '/upload/f_auto/')} type="video/mp4" />
-    </video>
-  </div>
-)}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Video</p>
+              {/* ✅ Fix vidéo */}
+              <video
+                key={chemin.video_url}
+                controls
+                preload="metadata"
+                playsInline
+                className="w-full rounded-xl max-h-48 bg-gray-900"
+              >
+                <source src={chemin.video_url} type="video/mp4" />
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
+            </div>
+          )}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Informations</p>
             <div className="grid grid-cols-2 gap-2">
