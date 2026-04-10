@@ -21,12 +21,18 @@ const STATUS_LABELS = {
   hidden: "Masque",
   deleted: "Supprime",
 };
-
 const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
-  const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", { method: "POST", body: fd });
+  // ✅ Force conversion MP4 H264 compatible navigateur
+  fd.append("eager", "vc_h264/f_mp4");
+  fd.append("eager_async", "false"); // ✅ attend la conversion avant de retourner
+
+  const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", { 
+    method: "POST", 
+    body: fd 
+  });
   const data = await res.json();
   if (!data.secure_url) throw new Error(data.error?.message || "Upload echoue");
   return { secure_url: data.secure_url, duration: Math.round(data.duration || 60) };

@@ -23,7 +23,14 @@ const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
-  const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", { method: "POST", body: fd });
+  // ✅ Force conversion MP4 H264 compatible navigateur
+  fd.append("eager", "vc_h264/f_mp4");
+  fd.append("eager_async", "false"); // ✅ attend la conversion avant de retourner
+
+  const res = await fetch("https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload", { 
+    method: "POST", 
+    body: fd 
+  });
   const data = await res.json();
   if (!data.secure_url) throw new Error(data.error?.message || "Upload echoue");
   return { secure_url: data.secure_url, duration: Math.round(data.duration || 60) };
@@ -47,17 +54,7 @@ const CheminDetailModal = ({ chemin, onClose }) => {
           {chemin.video_url && (
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Video</p>
-              {/* ✅ Fix vidéo */}
-              <video
-                key={chemin.video_url}
-                controls
-                preload="metadata"
-                playsInline
-                className="w-full rounded-xl max-h-48 bg-gray-900"
-              >
-                <source src={chemin.video_url} type="video/mp4" />
-                Votre navigateur ne supporte pas la lecture vidéo.
-              </video>
+              <video src={chemin.video_url} controls className="w-full rounded-xl max-h-48 bg-black" />
             </div>
           )}
           <div>
@@ -205,10 +202,12 @@ const Chemins = () => {
 
   const filteredChemins = chemins.filter((c) => {
     const matchSearch = (c.title || "").toLowerCase().includes(searchTerm.toLowerCase());
+    // ✅ "hidden" remplace "refuse" comme clé de filtre
     const matchStatus = filterStatus === "all" || c.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
+  // ✅ Pagination
   const totalItems = filteredChemins.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -235,9 +234,11 @@ const Chemins = () => {
     all: chemins.length,
     draft: chemins.filter((c) => c.status === "draft").length,
     published: chemins.filter((c) => c.status === "published").length,
+    // ✅ "hidden" à la place de "hidden" (anciennement "refuse")
     hidden: chemins.filter((c) => c.status === "hidden").length,
   };
 
+  // ✅ Tabs mis à jour : "Refuses" → "Masques", key "hidden"
   const tabs = [
     { key: "all", label: "Tous" },
     { key: "draft", label: "En attente" },
@@ -403,7 +404,7 @@ const Chemins = () => {
         </div>
       )}
 
-      {/* Liste paginée */}
+      {/* ✅ Liste paginée */}
       {!loading && paginated.length > 0 && (
         <div className="space-y-2">
           {paginated.map((chemin) => (
@@ -479,25 +480,28 @@ const Chemins = () => {
                 </div>
               </div>
 
-              {/* ✅ Fix vidéo */}
               {expandedVideo === chemin.id && chemin.video_url && (
-                <div className="px-4 pb-4 border-t border-gray-50 pt-3">
-                  <video
-                    key={chemin.video_url}
-                    controls
-                    preload="metadata"
-                    playsInline
-                    className="w-full rounded-xl max-h-56 bg-gray-900"
-                  >
-                    <source src={chemin.video_url} type="video/mp4" />
-                    Votre navigateur ne supporte pas la lecture vidéo.
-                  </video>
-                </div>
-              )}
+  <div className="px-4 pb-4 border-t border-gray-50 pt-3">
+    <video
+      key={chemin.video_url}
+      controls
+      preload="metadata"
+      playsInline
+      className="w-full rounded-xl max-h-56 bg-gray-900"
+    >
+      <source 
+        src={chemin.video_url.replace('/upload/', '/upload/vc_h264,f_mp4/')} 
+        type="video/mp4" 
+      />
+      <source src={chemin.video_url} type="video/mp4" />
+      <source src={chemin.video_url} type="video/quicktime" />
+    </video>
+  </div>
+)}
             </div>
           ))}
 
-          {/* Pagination */}
+          {/* ✅ Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2 py-3">
               <p className="text-xs text-gray-400">
