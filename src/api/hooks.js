@@ -226,7 +226,7 @@ import {
   fetchPaths, approvePath, rejectPath, createPath,
   fetchConnectedUsers, deletePath, hidePath,
   fetchEtablissementPaths, approveEtablissementPath, rejectEtablissementPath,
-} from "./apiService";
+}  from "./apiService"; 
 
 // ===========================
 // PATHS ADMIN

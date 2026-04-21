@@ -736,7 +736,7 @@
 import { useState, useEffect } from "react";
 import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, Trash2, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
-import { fetchEtablissements } from "../api/apiService.js";
+import { fetchEtablissements } from "../api/apiService";
 import VideoPlayer from "../components/VideoPlayer";
 
 const ITEMS_PER_PAGE = 10;
@@ -963,7 +963,7 @@ const Chemins = () => {
     setUploadError("");
     setUploading(true);
     try {
-      const { uploadToCloudinary } = await import("../api/apiService");
+     const { uploadToCloudinary } = await import("../api/apiService");
       const { secure_url, duration } = await uploadToCloudinary(file);
       setFormData((prev) => ({ ...prev, video_url: secure_url, duration }));
     } catch (err) { setUploadError(err.message); }
