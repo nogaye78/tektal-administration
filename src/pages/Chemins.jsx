@@ -736,7 +736,7 @@
 import { useState, useEffect } from "react";
 import { Search, Map, CheckCircle, PlusCircle, X, Video, Loader2, Plus, ChevronDown, ChevronUp, Eye, Trash2, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePathsList, usePathActions, useCreatePath } from "../api/hooks";
-import { fetchEtablissements } from "../api/apiService";
+import { fetchEtablissements } from "../services/api.js";
 import VideoPlayer from "../components/VideoPlayer";
 
 const ITEMS_PER_PAGE = 10;
