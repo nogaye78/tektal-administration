@@ -2,7 +2,6 @@ import axios from "axios";
 
 const BASE_URL = "https://tektal-backend.onrender.com";
 
-// Instances Axios
 const api = axios.create({
   baseURL: `${BASE_URL}/admin-panel/api/`,
 });
@@ -11,7 +10,6 @@ const pathsApi = axios.create({
   baseURL: `${BASE_URL}/api/`,
 });
 
-// Gestion des erreurs 401 + refresh token
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -65,6 +63,36 @@ export const login = async (email, password) => {
 };
 
 // ===========================
+// CLOUDINARY — FIX VIDÉOS EN NOIR
+// ===========================
+export const uploadToCloudinary = async (file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", "tektal_videos");
+  fd.append("resource_type", "video");
+  // ✅ Force conversion H264 pour compatibilité mobile → web
+  fd.append("eager", "vc_h264:baseline:3.0,ac_aac,f_mp4");
+  fd.append("eager_async", "false");
+
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload",
+    { method: "POST", body: fd }
+  );
+  const data = await res.json();
+
+  if (!data.secure_url) throw new Error(data.error?.message || "Upload échoué");
+
+  // ✅ Priorité URL eager (déjà H264) sinon transformation dans l'URL
+  const finalUrl =
+    data.eager?.[0]?.secure_url ||
+    data.secure_url
+      .replace("/upload/", "/upload/vc_h264,ac_aac,f_mp4/")
+      .replace(/\.(mov|MOV|hevc|HEVC|avi|AVI|3gp|3GP)$/, ".mp4");
+
+  return { secure_url: finalUrl, duration: Math.round(data.duration || 60) };
+};
+
+// ===========================
 // PATHS ADMIN
 // ===========================
 export const fetchPaths = async () => {
@@ -75,9 +103,13 @@ export const fetchPaths = async () => {
   return response.data;
 };
 
+// ✅ MODIFIÉ — createPath envoie platform: 'web' pour identifier la source
 export const createPath = async (formData) => {
   const token = localStorage.getItem("access_token");
-  const response = await pathsApi.post("paths/create/", formData, {
+  const response = await pathsApi.post("paths/create/", {
+    ...formData,
+    platform: "web", // ✅ identifie les chemins créés depuis le panel/version web
+  }, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -86,7 +118,6 @@ export const createPath = async (formData) => {
   return response.data;
 };
 
-// Masquer un chemin
 export const hidePath = async (id) => {
   const token = localStorage.getItem("access_token");
   const res = await fetch(`${BASE_URL}/admin-panel/api/paths/${id}/hide/`, {
@@ -120,7 +151,7 @@ export const rejectPath = async (id) => {
 };
 
 // ===========================
-// PATHS ETABLISSEMENT
+// PATHS ÉTABLISSEMENT
 // ===========================
 export const fetchEtablissementPaths = async () => {
   const token = localStorage.getItem("access_token");
@@ -163,7 +194,7 @@ export const hideEtablissementPath = async (id) => {
 };
 
 // ===========================
-// ETABLISSEMENT PROFILE
+// ÉTABLISSEMENT PROFILE
 // ===========================
 export const fetchEtablissementProfile = async () => {
   const token = localStorage.getItem("access_token");
@@ -201,14 +232,14 @@ export const toggleAdmin = async (id) => {
 
 export const toggleEtablissement = async (id) => {
   const token = localStorage.getItem("access_token");
-  const response = await api.post(`users/${id}/toggle-etablissement/`, {}, {  // ✅ URL corrigée
+  const response = await api.post(`users/${id}/toggle-etablissement/`, {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
 };
 
 // ===========================
-// ETABLISSEMENTS
+// ÉTABLISSEMENTS
 // ===========================
 export const fetchEtablissements = async () => {
   const token = localStorage.getItem("access_token");

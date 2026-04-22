@@ -225,7 +225,8 @@ import { useState, useEffect } from "react";
 import {
   fetchPaths, approvePath, rejectPath, createPath,
   fetchConnectedUsers, deletePath, hidePath,
-  fetchEtablissementPaths, approveEtablissementPath, rejectEtablissementPath,
+  fetchEtablissementPaths, approveEtablissementPath,
+  rejectEtablissementPath, deleteEtablissementPath, hideEtablissementPath,
 } from "./apiService";
 
 // ===========================
@@ -249,14 +250,29 @@ export const usePathsList = () => {
   };
 
   useEffect(() => { load(); }, []);
-  return { data, loading, error, refetch: load };
+
+  // ✅ AJOUT — updatePath, removePath, addPath pour mises à jour optimistes
+  const updatePath = (id, newData) => {
+    setData((prev) => prev.map((p) => p.id === id ? { ...p, ...newData } : p));
+  };
+
+  const removePath = (id) => {
+    setData((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const addPath = (newPath) => {
+    setData((prev) => [newPath, ...prev]);
+  };
+
+  return { data, loading, error, refetch: load, updatePath, removePath, addPath };
 };
 
-export const usePathActions = (refetch) => {
+export const usePathActions = (updatePath, removePath) => {
   const approve = async (id) => {
     try {
       await approvePath(id);
-      await refetch(); // ✅ await pour attendre le rechargement
+      // ✅ Mise à jour optimiste — pas de refetch
+      updatePath(id, { status: "published" });
     } catch (err) {
       console.error("Erreur approbation:", err);
     }
@@ -265,7 +281,7 @@ export const usePathActions = (refetch) => {
   const reject = async (id) => {
     try {
       await rejectPath(id);
-      await refetch();
+      updatePath(id, { status: "hidden" });
     } catch (err) {
       console.error("Erreur refus:", err);
     }
@@ -274,11 +290,9 @@ export const usePathActions = (refetch) => {
   const remove = async (id) => {
     try {
       const res = await deletePath(id);
-      console.log("🗑️ DELETE status:", res.status); // ← vérifiez en console
       if (res.ok || res.status === 204 || res.status === 200) {
-        await refetch(); // ✅ refetch seulement si suppression réussie
-      } else {
-        console.error("❌ Suppression échouée, statut:", res.status);
+        // ✅ Retire de la liste immédiatement
+        removePath(id);
       }
     } catch (err) {
       console.error("Erreur suppression:", err);
@@ -287,8 +301,9 @@ export const usePathActions = (refetch) => {
 
   const hide = async (id) => {
     try {
-      await hidePath(id);
-      await refetch();
+      const result = await hidePath(id);
+      // ✅ Toggle : met à jour le statut retourné par l'API
+      updatePath(id, { status: result?.status || "hidden" });
     } catch (err) {
       console.error("Erreur masquage:", err);
     }
@@ -297,7 +312,7 @@ export const usePathActions = (refetch) => {
   return { approve, reject, remove, hide };
 };
 
-export const useCreatePath = (refetch) => {
+export const useCreatePath = (addPath, refetch) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -305,11 +320,17 @@ export const useCreatePath = (refetch) => {
     setLoading(true);
     setError(null);
     try {
-      await createPath(formData);
-      await refetch();
+      const newPath = await createPath(formData);
+      if (newPath && addPath) {
+        // ✅ Ajoute en tête de liste sans refetch
+        addPath(newPath);
+      } else {
+        await refetch();
+      }
     } catch (err) {
       console.error("Erreur creation:", err);
       setError(err.message || "Erreur lors de la creation");
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -339,11 +360,21 @@ export const useConnectedUsers = () => {
   };
 
   useEffect(() => { load(); }, []);
-  return { data, loading, error, refetch: load };
+
+  // ✅ AJOUT — mises à jour optimistes utilisateurs
+  const removeUser = (id) => {
+    setData((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const updateUser = (id, newData) => {
+    setData((prev) => prev.map((u) => u.id === id ? { ...u, ...newData } : u));
+  };
+
+  return { data, loading, error, refetch: load, removeUser, updateUser };
 };
 
 // ===========================
-// PATHS ETABLISSEMENT
+// PATHS ÉTABLISSEMENT
 // ===========================
 export const useEtablissementPaths = () => {
   const [data, setData] = useState([]);
@@ -363,19 +394,62 @@ export const useEtablissementPaths = () => {
   };
 
   useEffect(() => { load(); }, []);
-  return { data, loading, error, refetch: load };
+
+  // ✅ AJOUT — mises à jour optimistes établissement
+  const updatePath = (id, newData) => {
+    setData((prev) => prev.map((p) => p.id === id ? { ...p, ...newData } : p));
+  };
+
+  const removePath = (id) => {
+    setData((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const addPath = (newPath) => {
+    setData((prev) => [newPath, ...prev]);
+  };
+
+  return { data, loading, error, refetch: load, updatePath, removePath, addPath };
 };
 
-export const useEtablissementPathActions = (refetch) => {
+export const useEtablissementPathActions = (updatePath, removePath) => {
   const approve = async (id) => {
-    try { await approveEtablissementPath(id); await refetch(); }
-    catch (err) { console.error("Erreur approbation:", err); }
+    try {
+      await approveEtablissementPath(id);
+      updatePath(id, { status: "published" });
+    } catch (err) {
+      console.error("Erreur approbation:", err);
+    }
   };
 
   const reject = async (id) => {
-    try { await rejectEtablissementPath(id); await refetch(); }
-    catch (err) { console.error("Erreur refus:", err); }
+    try {
+      await rejectEtablissementPath(id);
+      updatePath(id, { status: "hidden" });
+    } catch (err) {
+      console.error("Erreur refus:", err);
+    }
   };
 
-  return { approve, reject };
+  // ✅ AJOUT — remove et hide manquaient dans l'ancienne version
+  const remove = async (id) => {
+    try {
+      const res = await deleteEtablissementPath(id);
+      if (res.ok || res.status === 204 || res.status === 200) {
+        removePath(id);
+      }
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+    }
+  };
+
+  const hide = async (id) => {
+    try {
+      const result = await hideEtablissementPath(id);
+      updatePath(id, { status: result?.status || "hidden" });
+    } catch (err) {
+      console.error("Erreur masquage:", err);
+    }
+  };
+
+  return { approve, reject, remove, hide };
 };
