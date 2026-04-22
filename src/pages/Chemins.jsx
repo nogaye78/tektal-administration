@@ -53,8 +53,8 @@ const TABS = [
   { key: "draft",    label: "En attente" },
   { key: "published",label: "Approuvés" },
   { key: "hidden",   label: "Masqués" },
-  { key: "web",      label: "🌐 Web" },
-  { key: "mobile",   label: "📱 Mobile" },
+  { key: "web",      label: "Web" },
+  { key: "mobile",   label: "Mobile" },
 ];
 
 const EMPTY_FORM = {
