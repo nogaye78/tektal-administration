@@ -11,7 +11,7 @@ import VideoPlayer from "../components/VideoPlayer";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 50;
 
 const STATUS_COLORS = {
   draft:     "bg-yellow-100 text-yellow-600",
