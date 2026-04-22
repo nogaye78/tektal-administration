@@ -309,7 +309,7 @@ const filteredChemins = chemins.filter((c) => {
             <p className="text-slate-400 text-sm mt-1">{chemins.length} chemin{chemins.length > 1 ? "s" : ""} au total</p>
           </div>
           
-          // ✅ MODIFIÉ — header avec stats web et mobile
+
 <div className="flex gap-3 flex-wrap">
   {[
     { count: counts.draft,     label: "En attente", yellow: true },
@@ -393,7 +393,7 @@ const filteredChemins = chemins.filter((c) => {
                         {STATUS_LABELS[chemin.status] || chemin.status}
                       </span>
 
-                      // ✅ AJOUT — après le badge STATUS dans la liste des chemins
+                     
 <div className="flex items-center gap-2 flex-wrap">
   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[chemin.status] || "bg-gray-100 text-gray-600"}`}>
     {STATUS_LABELS[chemin.status] || chemin.status}
@@ -402,11 +402,11 @@ const filteredChemins = chemins.filter((c) => {
   {/* ✅ AJOUT badge plateforme */}
   {chemin.platform === "web" ? (
     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold flex items-center gap-1">
-      🌐 Web
+       Web
     </span>
   ) : (
     <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold flex items-center gap-1">
-      📱 Mobile
+       Mobile
     </span>
   )}
 
