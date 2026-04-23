@@ -236,8 +236,8 @@ const MesChemins = () => {
     { key: "draft",     label: "En attente" },
     { key: "published", label: "Approuvés" },
     { key: "hidden",    label: "Masqués" },
-    { key: "web",       label: "🌐 Web" },    // ✅ AJOUT
-    { key: "mobile",    label: "📱 Mobile" }, // ✅ AJOUT
+    { key: "web",       label: " Web" },    // ✅ AJOUT
+    { key: "mobile",    label: "Mobile" }, // ✅ AJOUT
   ];
 
   const totalItems = filteredChemins.length;
