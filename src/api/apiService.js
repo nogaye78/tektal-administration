@@ -62,15 +62,17 @@ export const login = async (email, password) => {
   }
 };
 
+// ===========================
+// CLOUDINARY — FIX VIDÉOS EN NOIR
+// ✅ eager supprimé — non supporté avec preset non signé (cause 400)
+// ✅ Conversion H264 appliquée dans l'URL à la lecture
+// ===========================
 export const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
   fd.append("resource_type", "video");
-
-  // ✅ SUPPRIMÉ — eager non supporté avec preset non signé (cause le 400)
-  // fd.append("eager", "vc_h264:baseline:3.0,ac_aac,f_mp4");
-  // fd.append("eager_async", "false");
+  // ✅ PAS de eager ici — preset non signé ne le supporte pas
 
   const res = await fetch(
     "https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload",
@@ -82,8 +84,7 @@ export const uploadToCloudinary = async (file) => {
     throw new Error(data.error?.message || "Upload échoué");
   }
 
-  // ✅ La conversion H264 se fait dans l'URL à la lecture (pas à l'upload)
-  // Cloudinary applique la transformation à la volée quand on lit la vidéo
+  // ✅ Transformation H264 dans l'URL — Cloudinary convertit à la volée à la lecture
   const finalUrl = data.secure_url.replace(
     "/upload/",
     "/upload/vc_h264,ac_aac,f_mp4/"
@@ -94,6 +95,7 @@ export const uploadToCloudinary = async (file) => {
     duration: Math.round(data.duration || 60),
   };
 };
+
 // ===========================
 // PATHS ADMIN
 // ===========================
@@ -105,12 +107,11 @@ export const fetchPaths = async () => {
   return response.data;
 };
 
-// ✅ MODIFIÉ — createPath envoie platform: 'web' pour identifier la source
 export const createPath = async (formData) => {
   const token = localStorage.getItem("access_token");
   const response = await pathsApi.post("paths/create/", {
     ...formData,
-    platform: "web", // ✅ identifie les chemins créés depuis le panel/version web
+    platform: "web",
   }, {
     headers: {
       Authorization: `Bearer ${token}`,
