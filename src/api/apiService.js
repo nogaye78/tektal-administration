@@ -62,17 +62,15 @@ export const login = async (email, password) => {
   }
 };
 
-// ===========================
-// CLOUDINARY — FIX VIDÉOS EN NOIR
-// ===========================
 export const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
   fd.append("resource_type", "video");
-  // ✅ Force conversion H264 pour compatibilité mobile → web
-  fd.append("eager", "vc_h264:baseline:3.0,ac_aac,f_mp4");
-  fd.append("eager_async", "false");
+
+  // ✅ SUPPRIMÉ — eager non supporté avec preset non signé (cause le 400)
+  // fd.append("eager", "vc_h264:baseline:3.0,ac_aac,f_mp4");
+  // fd.append("eager_async", "false");
 
   const res = await fetch(
     "https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload",
@@ -80,18 +78,22 @@ export const uploadToCloudinary = async (file) => {
   );
   const data = await res.json();
 
-  if (!data.secure_url) throw new Error(data.error?.message || "Upload échoué");
+  if (!data.secure_url) {
+    throw new Error(data.error?.message || "Upload échoué");
+  }
 
-  // ✅ Priorité URL eager (déjà H264) sinon transformation dans l'URL
-  const finalUrl =
-    data.eager?.[0]?.secure_url ||
-    data.secure_url
-      .replace("/upload/", "/upload/vc_h264,ac_aac,f_mp4/")
-      .replace(/\.(mov|MOV|hevc|HEVC|avi|AVI|3gp|3GP)$/, ".mp4");
+  // ✅ La conversion H264 se fait dans l'URL à la lecture (pas à l'upload)
+  // Cloudinary applique la transformation à la volée quand on lit la vidéo
+  const finalUrl = data.secure_url.replace(
+    "/upload/",
+    "/upload/vc_h264,ac_aac,f_mp4/"
+  );
 
-  return { secure_url: finalUrl, duration: Math.round(data.duration || 60) };
+  return {
+    secure_url: finalUrl,
+    duration: Math.round(data.duration || 60),
+  };
 };
-
 // ===========================
 // PATHS ADMIN
 // ===========================
