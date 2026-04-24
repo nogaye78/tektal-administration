@@ -63,16 +63,16 @@ export const login = async (email, password) => {
 };
 
 // ===========================
-// CLOUDINARY — FIX VIDÉOS EN NOIR
-// ✅ eager supprimé — non supporté avec preset non signé (cause 400)
-// ✅ Conversion H264 appliquée dans l'URL à la lecture
+// CLOUDINARY
+// ✅ URL originale stockée — pas de transformation à l'upload
+// ✅ La conversion H264 est appliquée dans VideoPlayer à la lecture
 // ===========================
 export const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", "tektal_videos");
   fd.append("resource_type", "video");
-  // ✅ PAS de eager ici — preset non signé ne le supporte pas
+  // ✅ Pas de eager — non supporté avec preset non signé
 
   const res = await fetch(
     "https://api.cloudinary.com/v1_1/dqcc8n1th/video/upload",
@@ -84,14 +84,10 @@ export const uploadToCloudinary = async (file) => {
     throw new Error(data.error?.message || "Upload échoué");
   }
 
-  // ✅ Transformation H264 dans l'URL — Cloudinary convertit à la volée à la lecture
-  const finalUrl = data.secure_url.replace(
-    "/upload/",
-    "/upload/vc_h264,ac_aac,f_mp4/"
-  );
-
+  // ✅ URL propre sans transformation forcée
+  // VideoPlayer applique /vc_h264,ac_aac,f_mp4/ à la lecture
   return {
-    secure_url: finalUrl,
+    secure_url: data.secure_url,
     duration: Math.round(data.duration || 60),
   };
 };
