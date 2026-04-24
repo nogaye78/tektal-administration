@@ -62,6 +62,9 @@ export const login = async (email, password) => {
   }
 };
 
+// ===========================
+// CLOUDINARY UPLOAD
+// ===========================
 export const uploadToCloudinary = async (file) => {
   const fd = new FormData();
   fd.append("file", file);
@@ -78,9 +81,16 @@ export const uploadToCloudinary = async (file) => {
     throw new Error(data.error?.message || "Upload échoué");
   }
 
-  // ✅ URL propre — pas de transformation à l'upload
+  // ✅ Transforme immédiatement en H264/AAC/MP4 compatible tous navigateurs
+  // Cela garantit que l'URL stockée en base est toujours lisible
+  // et que le thumbnail Cloudinary (so_0,f_jpg) fonctionnera correctement
+  const h264Url = data.secure_url.replace(
+    "/upload/",
+    "/upload/vc_h264,ac_aac,f_mp4/"
+  );
+
   return {
-    secure_url: data.secure_url,
+    secure_url: h264Url,
     duration: Math.round(data.duration || 60),
   };
 };
